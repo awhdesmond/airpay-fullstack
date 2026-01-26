@@ -1,0 +1,36 @@
+projects:
+- id: github.com/airpay/infrastructure
+  dir: cloud-ops/project-1-dev-payments
+  workflow: dev-workflow
+- id: github.com/airpay/infrastructure
+  dir: cloud-ops/project-1-dev-payments
+  workflow: prod-workflow
+workflows:
+dev-workflow:
+  plan:
+    steps:
+      - env:
+          name: GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
+          value: "atlantis-deployer-dev@DEVOPS-PROJECT-ID.iam.gserviceaccount.com"
+      - init
+      - plan
+  apply:
+    steps:
+      - env:
+          name: GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
+          value: "atlantis-deployer-dev@DEVOPS-PROJECT-ID.iam.gserviceaccount.com"
+      - apply
+prod-workflow:
+  plan:
+    steps:
+      - env:
+          name: GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
+          value: "atlantis-deployer-prod@DEVOPS-PROJECT-ID.iam.gserviceaccount.com"
+      - init
+      - plan
+  apply:
+    steps:
+      - env:
+          name: GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
+          value: "atlantis-deployer-prod@DEVOPS-PROJECT-ID.iam.gserviceaccount.com"
+      - apply

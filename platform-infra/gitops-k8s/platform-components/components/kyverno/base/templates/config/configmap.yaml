@@ -1,0 +1,129 @@
+---
+# Source: kyverno/templates/config/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kyverno
+  namespace: platform-kyverno
+  labels:
+    app.kubernetes.io/component: config
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.6.2
+    helm.sh/chart: kyverno-3.6.2
+  annotations:
+    helm.sh/resource-policy: "keep"
+data:
+  enableDefaultRegistryMutation: "true"
+  defaultRegistry: "docker.io"
+  generateSuccessEvents: "false"
+  excludeGroups: "system:nodes"
+  resourceFilters: >-
+    [*/*,platform-kyverno,*]
+    [Event,*,*]
+    [*/*,kube-system,*]
+    [*/*,kube-public,*]
+    [*/*,kube-node-lease,*]
+    [Node,*,*]
+    [Node/?*,*,*]
+    [APIService,*,*]
+    [APIService/?*,*,*]
+    [TokenReview,*,*]
+    [SubjectAccessReview,*,*]
+    [SelfSubjectAccessReview,*,*]
+    [Binding,*,*]
+    [Pod/binding,*,*]
+    [ReplicaSet,*,*]
+    [ReplicaSet/?*,*,*]
+    [EphemeralReport,*,*]
+    [ClusterEphemeralReport,*,*]
+    [ClusterRole,*,kyverno:admission-controller]
+    [ClusterRole,*,kyverno:admission-controller:core]
+    [ClusterRole,*,kyverno:admission-controller:additional]
+    [ClusterRole,*,kyverno:background-controller]
+    [ClusterRole,*,kyverno:background-controller:core]
+    [ClusterRole,*,kyverno:background-controller:additional]
+    [ClusterRole,*,kyverno:cleanup-controller]
+    [ClusterRole,*,kyverno:cleanup-controller:core]
+    [ClusterRole,*,kyverno:cleanup-controller:additional]
+    [ClusterRole,*,kyverno:reports-controller]
+    [ClusterRole,*,kyverno:reports-controller:core]
+    [ClusterRole,*,kyverno:reports-controller:additional]
+    [ClusterRoleBinding,*,kyverno:admission-controller]
+    [ClusterRoleBinding,*,kyverno:background-controller]
+    [ClusterRoleBinding,*,kyverno:cleanup-controller]
+    [ClusterRoleBinding,*,kyverno:reports-controller]
+    [ServiceAccount,platform-kyverno,kyverno-admission-controller]
+    [ServiceAccount/?*,platform-kyverno,kyverno-admission-controller]
+    [ServiceAccount,platform-kyverno,kyverno-background-controller]
+    [ServiceAccount/?*,platform-kyverno,kyverno-background-controller]
+    [ServiceAccount,platform-kyverno,kyverno-cleanup-controller]
+    [ServiceAccount/?*,platform-kyverno,kyverno-cleanup-controller]
+    [ServiceAccount,platform-kyverno,kyverno-reports-controller]
+    [ServiceAccount/?*,platform-kyverno,kyverno-reports-controller]
+    [Role,platform-kyverno,kyverno:admission-controller]
+    [Role,platform-kyverno,kyverno:background-controller]
+    [Role,platform-kyverno,kyverno:cleanup-controller]
+    [Role,platform-kyverno,kyverno:reports-controller]
+    [RoleBinding,platform-kyverno,kyverno:admission-controller]
+    [RoleBinding,platform-kyverno,kyverno:background-controller]
+    [RoleBinding,platform-kyverno,kyverno:cleanup-controller]
+    [RoleBinding,platform-kyverno,kyverno:reports-controller]
+    [ConfigMap,platform-kyverno,kyverno]
+    [ConfigMap,platform-kyverno,kyverno-metrics]
+    [Deployment,platform-kyverno,kyverno-admission-controller]
+    [Deployment/?*,platform-kyverno,kyverno-admission-controller]
+    [Deployment,platform-kyverno,kyverno-background-controller]
+    [Deployment/?*,platform-kyverno,kyverno-background-controller]
+    [Deployment,platform-kyverno,kyverno-cleanup-controller]
+    [Deployment/?*,platform-kyverno,kyverno-cleanup-controller]
+    [Deployment,platform-kyverno,kyverno-reports-controller]
+    [Deployment/?*,platform-kyverno,kyverno-reports-controller]
+    [Pod,platform-kyverno,kyverno-admission-controller-*]
+    [Pod/?*,platform-kyverno,kyverno-admission-controller-*]
+    [Pod,platform-kyverno,kyverno-background-controller-*]
+    [Pod/?*,platform-kyverno,kyverno-background-controller-*]
+    [Pod,platform-kyverno,kyverno-cleanup-controller-*]
+    [Pod/?*,platform-kyverno,kyverno-cleanup-controller-*]
+    [Pod,platform-kyverno,kyverno-reports-controller-*]
+    [Pod/?*,platform-kyverno,kyverno-reports-controller-*]
+    [Job,platform-kyverno,kyverno-hook-pre-delete]
+    [Job/?*,platform-kyverno,kyverno-hook-pre-delete]
+    [NetworkPolicy,platform-kyverno,kyverno-admission-controller]
+    [NetworkPolicy/?*,platform-kyverno,kyverno-admission-controller]
+    [NetworkPolicy,platform-kyverno,kyverno-background-controller]
+    [NetworkPolicy/?*,platform-kyverno,kyverno-background-controller]
+    [NetworkPolicy,platform-kyverno,kyverno-cleanup-controller]
+    [NetworkPolicy/?*,platform-kyverno,kyverno-cleanup-controller]
+    [NetworkPolicy,platform-kyverno,kyverno-reports-controller]
+    [NetworkPolicy/?*,platform-kyverno,kyverno-reports-controller]
+    [PodDisruptionBudget,platform-kyverno,kyverno-admission-controller]
+    [PodDisruptionBudget/?*,platform-kyverno,kyverno-admission-controller]
+    [PodDisruptionBudget,platform-kyverno,kyverno-background-controller]
+    [PodDisruptionBudget/?*,platform-kyverno,kyverno-background-controller]
+    [PodDisruptionBudget,platform-kyverno,kyverno-cleanup-controller]
+    [PodDisruptionBudget/?*,platform-kyverno,kyverno-cleanup-controller]
+    [PodDisruptionBudget,platform-kyverno,kyverno-reports-controller]
+    [PodDisruptionBudget/?*,platform-kyverno,kyverno-reports-controller]
+    [Service,platform-kyverno,kyverno-svc]
+    [Service/?*,platform-kyverno,kyverno-svc]
+    [Service,platform-kyverno,kyverno-svc-metrics]
+    [Service/?*,platform-kyverno,kyverno-svc-metrics]
+    [Service,platform-kyverno,kyverno-background-controller-metrics]
+    [Service/?*,platform-kyverno,kyverno-background-controller-metrics]
+    [Service,platform-kyverno,kyverno-cleanup-controller]
+    [Service/?*,platform-kyverno,kyverno-cleanup-controller]
+    [Service,platform-kyverno,kyverno-cleanup-controller-metrics]
+    [Service/?*,platform-kyverno,kyverno-cleanup-controller-metrics]
+    [Service,platform-kyverno,kyverno-reports-controller-metrics]
+    [Service/?*,platform-kyverno,kyverno-reports-controller-metrics]
+    [ServiceMonitor,platform-kyverno,kyverno-admission-controller]
+    [ServiceMonitor,platform-kyverno,kyverno-background-controller]
+    [ServiceMonitor,platform-kyverno,kyverno-cleanup-controller]
+    [ServiceMonitor,platform-kyverno,kyverno-reports-controller]
+    [Secret,platform-kyverno,kyverno-svc.platform-kyverno.svc.*]
+    [Secret,platform-kyverno,kyverno-cleanup-controller.platform-kyverno.svc.*]
+  updateRequestThreshold: "1000"
+  webhooks: "{\"namespaceSelector\":{\"matchExpressions\":[{\"key\":\"kubernetes.io/metadata.name\",\"operator\":\"NotIn\",\"values\":[\"kube-system\"]},{\"key\":\"kubernetes.io/metadata.name\",\"operator\":\"NotIn\",\"values\":[\"platform-kyverno\"]}],\"matchLabels\":null}}"
+  webhookAnnotations: "{\"admissions.enforcer/disabled\":\"true\"}"

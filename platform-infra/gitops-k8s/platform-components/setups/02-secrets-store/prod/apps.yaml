@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-secrets-store
+  namespace: platform-argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: devops
+            url: https://kubernetes.default.svc
+    - clusters:
+        selector:
+          matchLabels:
+            env: prod
+  template:
+    metadata:
+      name: 'app-secrets-store-{{ name }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/airpay/infrastructure.git
+        targetRevision: HEAD
+        path: gitops-k8s/platform/setups/02-secrets-store/prod
+      destination:
+        server: '{{server}}' # The API URL of the remote cluster
+        namespace: platform-secrets-store
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

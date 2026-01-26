@@ -1,0 +1,46 @@
+---
+# Source: kyverno/templates/tests/reports-controller-metrics.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-reports-controller-metrics
+  namespace: platform-kyverno
+  labels:
+    app.kubernetes.io/component: test
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.6.2
+    helm.sh/chart: kyverno-3.6.2
+  annotations:
+    helm.sh/hook: test
+spec:
+  automountServiceAccountToken: true
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: curlimages/curl:8.10.1
+      imagePullPolicy: IfNotPresent
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      command:
+        - /bin/sh
+        - -c
+        - sleep 20 ; wget -O- -S --no-check-certificate http://kyverno-reports-controller-metrics.platform-kyverno:8000/metrics

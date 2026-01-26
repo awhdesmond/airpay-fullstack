@@ -1,0 +1,45 @@
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: https-default-gw-params
+  namespace: platform-gateways
+spec:
+  kube:
+    service:
+      extraAnnotations:
+        cloud.google.com/l4-rbs: "enabled"
+        networking.gke.io/load-balancer-ip-addresses: "project-0-devops-gke-gateway"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: https-default
+  namespace: platform-gateways
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: https-default-gw-params
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+  listeners:
+    # LISTENER 1: HTTP (Port 80)
+    # Required for Let's Encrypt to "call you" to verify ownership
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-atlantis-airpay-codes
+      protocol: HTTPS
+      port: 443
+      hostname: "atlantis.airpay.codes"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: atlantis-tls-secret-airpay
+      allowedRoutes:
+        namespaces:
+          from: All

@@ -1,0 +1,29 @@
+---
+# Source: kgateway/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kgateway
+  namespace: platform-gateways
+  labels:
+    helm.sh/chart: kgateway-v2.1.2
+    kgateway: kgateway
+    app.kubernetes.io/name: kgateway
+    app.kubernetes.io/instance: kgateway
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+  - name: grpc-xds
+    protocol: TCP
+    port: 9977
+    targetPort: 9977
+  - name: grpc-xds-agw
+    protocol: TCP
+    port: 9978
+    targetPort: 9978
+  selector:
+    kgateway: kgateway
+    app.kubernetes.io/name: kgateway
+    app.kubernetes.io/instance: kgateway

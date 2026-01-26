@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-kyverno
+  namespace: platform-argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: devops
+            url: https://kubernetes.default.svc
+    - clusters:
+        selector:
+          matchLabels:
+            env: prod
+  template:
+    metadata:
+      name: 'app-kyverno-{{ name }}'
+      annotations:
+        argocd.argoproj.io/compare-options: ServerSideDiff=true,IncludeMutationWebhook=true
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/airpay/infrastructure.git
+        targetRevision: HEAD
+        path: gitops-k8s/platform/setups/05-kyverno/prod
+      destination:
+        server: '{{server}}' # The API URL of the remote cluster
+        namespace: platform-kyverno
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

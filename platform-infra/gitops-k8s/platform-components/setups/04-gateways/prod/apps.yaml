@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-gateways
+  namespace: platform-argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: devops
+            url: https://kubernetes.default.svc
+    - clusters:
+        selector:
+          matchLabels:
+            env: prod
+  template:
+    metadata:
+      name: 'app-gateways-{{ name }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/airpay/infrastructure.git
+        targetRevision: HEAD
+        path: gitops-k8s/platform/setups/04-gateways/prod
+      destination:
+        server: '{{server}}' # The API URL of the remote cluster
+        namespace: platform-gateways
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

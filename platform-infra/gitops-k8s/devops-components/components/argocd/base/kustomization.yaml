@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: platform-argocd
+
+resources:
+- ns.yaml
+- https://github.com/argoproj/argo-cd/manifests/crds\?ref\=stable
+- https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/ha/install.yaml

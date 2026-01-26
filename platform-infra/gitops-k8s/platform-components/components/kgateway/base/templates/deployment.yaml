@@ -1,0 +1,95 @@
+---
+# Source: kgateway/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kgateway
+  namespace: platform-gateways
+  labels:
+    helm.sh/chart: kgateway-v2.1.2
+    kgateway: kgateway
+    app.kubernetes.io/name: kgateway
+    app.kubernetes.io/instance: kgateway
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      kgateway: kgateway
+      app.kubernetes.io/name: kgateway
+      app.kubernetes.io/instance: kgateway
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "9092"
+        prometheus.io/scrape: "true"
+      labels:
+        kgateway: kgateway
+        app.kubernetes.io/name: kgateway
+        app.kubernetes.io/instance: kgateway
+    spec:
+      serviceAccountName: kgateway
+      containers:
+        - name: kgateway
+          image: "cr.kgateway.dev/kgateway-dev/kgateway:v2.1.2"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9977
+              name: grpc-xds
+              protocol: TCP
+            - containerPort: 9978
+              name: grpc-xds-agw
+              protocol: TCP
+            - containerPort: 9093
+              name: health
+              protocol: TCP
+            - containerPort: 9092
+              name: metrics
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 9093
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          env:
+            - name: GOMEMLIMIT
+              valueFrom:
+                resourceFieldRef:
+                  divisor: "1"
+                  resource: limits.memory
+            - name: GOMAXPROCS
+              valueFrom:
+                resourceFieldRef:
+                  divisor: "1"
+                  resource: limits.cpu
+            - name: KGW_LOG_LEVEL
+              value: "info"
+            - name: KGW_XDS_SERVICE_NAME
+              value: kgateway
+            - name: KGW_XDS_SERVICE_PORT
+              value: "9977"
+            - name: KGW_AGENTGATEWAY_XDS_SERVICE_PORT
+              value: "9978"
+            - name: KGW_DEFAULT_IMAGE_REGISTRY
+              value: cr.kgateway.dev/kgateway-dev
+            - name: KGW_DEFAULT_IMAGE_TAG
+              value: v2.1.2
+            - name: KGW_DEFAULT_IMAGE_PULL_POLICY
+              value: IfNotPresent
+            - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
+              value: "[]"
+            - name: KGW_POLICY_MERGE
+              value: "{}"
+            - name: KGW_VALIDATION_MODE
+              value: "standard"
+            # TODO: Remove this once the cleanup is done. Required as the kgateway-system
+            # namespace is the default namespace and conformance will fail as a result.
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            {}

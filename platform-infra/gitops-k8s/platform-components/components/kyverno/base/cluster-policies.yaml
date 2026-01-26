@@ -1,0 +1,84 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: generate-default-network-policy
+spec:
+  rules:
+  - name: generate-deny-all-policy
+    match:
+      any:
+      - resources:
+          kinds:
+          - Namespace
+    # CRITICAL: Exclude system namespaces to avoid breaking GKE or Kyverno itself
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kube-system
+          - kube-public
+          - kyverno
+          - platform-gateways # Don't lock down your gateway namespace blindly
+    generate:
+      apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      name: baseline-deny-with-exceptions
+      namespace: "{{request.object.metadata.name}}" # Variable: The new NS name
+      synchronize: true # The "Magic Link" - keeps all namespaces in sync with this policy
+      data:
+        spec:
+          podSelector: {}
+          policyTypes:
+          - Ingress
+          - Egress
+          egress:
+          - to:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: kube-system
+            ports:
+            - protocol: UDP
+              port: 53
+            - protocol: TCP
+              port: 53
+          ingress:
+          - from:
+            - ipBlock:
+                cidr: 35.191.0.0/16
+            - ipBlock:
+                cidr: 130.211.0.0/22
+            ports:
+            - protocol: TCP
+              port: 80
+          - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: "{{request.object.metadata.name}}"
+            ports:
+            - protocol: TCP
+              port: 15008
+          - from:
+            - ipBlock:
+                cidr: 169.254.7.127/32
+          - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: platform-gateways
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: generate-pod-security-polcies
+spec:
+  rules:
+  - name: add-baseline-label
+    match:
+      resources:
+        kinds:
+        - Namespace
+    mutate:
+      patchStrategicMerge:
+        metadata:
+          labels:
+            pod-security.kubernetes.io/enforce: baseline
+            pod-security.kubernetes.io/enforce-version: latest

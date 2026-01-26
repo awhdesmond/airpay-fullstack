@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- crds/gateway.kgateway.dev_backendconfigpolicies.yaml
+- crds/gateway.kgateway.dev_backends.yaml
+- crds/gateway.kgateway.dev_directresponses.yaml
+- crds/gateway.kgateway.dev_gatewayextensions.yaml
+- crds/gateway.kgateway.dev_gatewayparameters.yaml
+- crds/gateway.kgateway.dev_httplistenerpolicies.yaml
+- crds/gateway.kgateway.dev_trafficpolicies.yaml
+- templates/deployment.yaml
+- templates/role.yaml
+- templates/service.yaml
+- templates/serviceaccount.yaml

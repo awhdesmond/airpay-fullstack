@@ -55,6 +55,7 @@ Same resources & configuration as primary site, e.g LBs, replicas etc. But GKE s
 2. Then switch traffic.
 
 ## TODO
+* network peering between devops and apps projects
 1. DR ansible playbook
 2. Payment flow diagram with all the stages?
 

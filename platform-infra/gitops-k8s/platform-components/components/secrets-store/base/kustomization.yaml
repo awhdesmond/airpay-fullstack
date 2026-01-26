@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: platform-secrets
+
+resources:
+- templates/crds-upgrade-hook.yaml
+- templates/csidriver.yaml
+- templates/keep-crds-upgrade-hook.yaml
+- templates/role-secretproviderclasses-admin.yaml
+- templates/role-secretproviderclasses-viewer.yaml
+- templates/role-secretproviderclasspodstatuses-viewer.yaml
+- templates/role-syncsecret.yaml
+- templates/role-syncsecret_binding.yaml
+- templates/role.yaml
+- templates/role_binding.yaml
+- templates/secrets-store-csi-driver.yaml
+- templates/serviceaccount.yaml
