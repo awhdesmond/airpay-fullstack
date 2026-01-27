@@ -197,6 +197,9 @@ resource "google_cloud_scheduler_job" "snapshot_15min" {
 # 6. Load Balancer
 # ---------------------------------------------------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 6.1 Unmanaged instance group
+# ---------------------------------------------------------------------------------------------------------------------
 resource "google_compute_instance_group" "pg_ig_main" {
   name        = "${var.db_cluster_name}-ig-main"
   description = "Postgres Main Cluster Instance Group"
@@ -218,19 +221,58 @@ resource "google_compute_instance_group" "pg_ig_main" {
   }
 }
 
-resource "google_compute_health_check" "pg_hc_master" {
-  name               = "${var.db_cluster_name}-hc-master"
+resource "google_compute_instance_group" "pg_ig_failover" {
+  name        = "${var.db_cluster_name}-ig-replica"
+  description = "Postgres Failover Cluster Instance Group"
+
+  # dynamically add all nodes from the main region
+  instances = [
+   for node in var.db_nodes: google_compute_instance.db_nodes[node.name].self_link
+   if node.is_failover == "true" && node.is_backup == "false"
+  ]
+
+  named_port {
+    name = "patroni"
+    port = 8008
+  }
+
+  named_port {
+    name = "postgres"
+    port = 5432
+  }
+}
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 6.2 Health Checks
+# ---------------------------------------------------------------------------------------------------------------------
+resource "google_compute_health_check" "pg_hc_primary" {
+  name               = "${var.db_cluster_name}-hc-primary"
   check_interval_sec = 10
   timeout_sec        = 5
 
   http_health_check {
     port         = 8008
-    request_path = "/master" # Specific Patroni endpoint
+    request_path = "/master"
   }
 }
 
-resource "google_compute_region_backend_service" "pg_backend_main" {
-  name                  = "${var.db_cluster_name}-pg-backend-main"
+resource "google_compute_health_check" "pg_hc_replica" {
+  name               = "${var.db_cluster_name}-hc-replica"
+  check_interval_sec = 10
+  timeout_sec        = 5
+
+  http_health_check {
+    port         = 8008
+    request_path = "/replica"
+  }
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 6.3 Backend services & Forwarding Rules (Main)
+# ---------------------------------------------------------------------------------------------------------------------
+resource "google_compute_region_backend_service" "pg_backend_main_primary" {
+  name                  = "${var.db_cluster_name}-pg-backend-main-primary"
   region                = var.region_main
   load_balancing_scheme = "INTERNAL"
   protocol              = "TCP"
@@ -239,18 +281,92 @@ resource "google_compute_region_backend_service" "pg_backend_main" {
     balancing_mode = "CONNECTION"
   }
 
-  health_checks = [google_compute_health_check.pg_hc_master.id]
+  health_checks = [google_compute_health_check.pg_hc_primary.id]
 }
 
-resource "google_compute_forwarding_rule" "pg_lb_frontend" {
-  name                  = "${var.db_cluster_name}-pg-lb-frontend"
+resource "google_compute_region_backend_service" "pg_backend_main_replica" {
+  name                  = "${var.db_cluster_name}-pg-backend-main-replica"
   region                = var.region_main
   load_balancing_scheme = "INTERNAL"
-  backend_service       = google_compute_region_backend_service.pg_backend_main.id
+  protocol              = "TCP"
+  backend {
+    group          = google_compute_instance_group.pg_ig_main.id
+    balancing_mode = "CONNECTION"
+  }
+
+  health_checks = [google_compute_health_check.pg_hc_replica]
+}
+
+resource "google_compute_forwarding_rule" "pg_main_lb_frontend_primary" {
+  name                  = "${var.db_cluster_name}-pg-main-lb-frontend-primary"
+  region                = var.region_main
+  load_balancing_scheme = "INTERNAL"
+  backend_service       = google_compute_region_backend_service.pg_backend_main_primary.id
   ports                 = ["5432"]
   network               = var.db_nodes_vpc_network
-  subnetwork            = google_compute_subnetwork.subnet_main.id
+  subnetwork            = var.db_nodes_subnet_main
 }
+
+resource "google_compute_forwarding_rule" "pg_main_lb_frontend_replica" {
+  name                  = "${var.db_cluster_name}-pg-main-lb-frontend-replica"
+  region                = var.region_main
+  load_balancing_scheme = "INTERNAL"
+  backend_service       = google_compute_region_backend_service.pg_backend_main_replica.id
+  ports                 = ["5432"]
+  network               = var.db_nodes_vpc_network
+  subnetwork            = var.db_nodes_subnet_main
+}
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 6.3 Backend services & Forwarding Rules (Failover)
+# ---------------------------------------------------------------------------------------------------------------------
+resource "google_compute_region_backend_service" "pg_backend_failover_primary" {
+  name                  = "${var.db_cluster_name}-pg-backend-failover-primary"
+  region                = var.region_failover
+  load_balancing_scheme = "INTERNAL"
+  protocol              = "TCP"
+  backend {
+    group          = google_compute_instance_group.pg_ig_failover.id
+    balancing_mode = "CONNECTION"
+  }
+
+  health_checks = [google_compute_health_check.pg_hc_primary.id]
+}
+
+resource "google_compute_region_backend_service" "pg_backend_failover_replica" {
+  name                  = "${var.db_cluster_name}-pg-backend-failover-replica"
+  region                = var.region_failover
+  load_balancing_scheme = "INTERNAL"
+  protocol              = "TCP"
+  backend {
+    group          = google_compute_instance_group.pg_ig_failover.id
+    balancing_mode = "CONNECTION"
+  }
+
+  health_checks = [google_compute_health_check.pg_hc_replica]
+}
+
+resource "google_compute_forwarding_rule" "pg_failover_lb_frontend_primary" {
+  name                  = "${var.db_cluster_name}-pg-failover-lb-frontend-primary"
+  region                = var.region_failover
+  load_balancing_scheme = "INTERNAL"
+  backend_service       = google_compute_region_backend_service.pg_backend_failover_primary.id
+  ports                 = ["5432"]
+  network               = var.db_nodes_vpc_network
+  subnetwork            = var.db_nodes_subnet_failover
+}
+
+resource "google_compute_forwarding_rule" "pg_failover_lb_frontend_replica" {
+  name                  = "${var.db_cluster_name}-pg-failover-lb-frontend-replica"
+  region                = var.region_failover
+  load_balancing_scheme = "INTERNAL"
+  backend_service       = google_compute_region_backend_service.pg_backend_failover_replica.id
+  ports                 = ["5432"]
+  network               = var.db_nodes_vpc_network
+  subnetwork            = var.db_nodes_subnet_failover
+}
+
 
 
 # ---------------------------------------------------------------------------------------------------------------------
