@@ -1,0 +1,3 @@
+---
+# Source: istiod/templates/revision-tags-svc.yaml
+# Adapted from istio-discovery/templates/service.yaml

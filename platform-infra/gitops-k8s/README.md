@@ -24,8 +24,7 @@ Platform components provide foundational cluster-level functionalities and capab
 | Secrets Store CSI | platform-secrets  |
 | cert-manager      | platform-certs    |
 | kyverno           | platform-kyverno    |
-| ambient-mesh      | platform-ambient-mesh    |
-
+| ambient-mesh      | platform-istio-system    |
 
 `components/*`
 

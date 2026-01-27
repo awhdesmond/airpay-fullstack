@@ -10,25 +10,20 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 pushd ${ROOT_DIR}/platform-infra/gitops-k8s/platform-components/components/kyverno
 
 helm repo add kyverno https://kyverno.github.io/kyverno/
-helm fetch \
-    --untar \
-    --untardir charts \
-    kyverno/kyverno
-
-helm template \
+helm pull kyverno/kyverno --untar --untardir temp_charts
+helm template kyverno \
+    temp_charts/kyverno \
     --output-dir base \
     --namespace platform-kyverno \
     --set admissionController.replicas=3 \
     --set backgroundController.replicas=2 \
     --set cleanupController.replicas=2 \
     --set reportsController.replicas=2 \
-    --include-crds \
-    kyverno \
-    charts/kyverno
+    --include-crds
 
+mv base/kyverno/charts/crds base/
 mv base/kyverno/templates base/
-mv base/kyverno/charts base/
-rm -rf charts base/kyverno
+rm -rf temp_charts base/kyverno
 
 pushd base
 kustomize create --autodetect --recursive

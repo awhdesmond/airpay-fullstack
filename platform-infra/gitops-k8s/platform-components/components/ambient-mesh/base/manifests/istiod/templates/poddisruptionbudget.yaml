@@ -1,0 +1,4 @@
+---
+# Source: istiod/templates/poddisruptionbudget.yaml
+# Not created if istiod is running remotely
+# a workaround for https://github.com/kubernetes/kubernetes/issues/93476

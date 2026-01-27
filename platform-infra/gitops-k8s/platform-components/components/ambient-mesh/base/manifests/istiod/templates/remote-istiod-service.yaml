@@ -1,0 +1,3 @@
+---
+# Source: istiod/templates/remote-istiod-service.yaml
+# This file is only used for remote

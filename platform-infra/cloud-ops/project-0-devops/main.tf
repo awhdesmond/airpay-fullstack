@@ -181,3 +181,24 @@ resource "google_project_iam_member" "prod_deployer_permissions" {
   role    = each.value.role
   member  = "serviceAccount:${google_service_account.atlantis_prod.email}"
 }
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 5. Thanos
+# ---------------------------------------------------------------------------------------------------------------------
+
+resource "google_service_account" "thanos_sa" {
+  account_id   = "thanos-writer"
+  display_name = "Thanos Metrics Writer"
+}
+
+resource "google_storage_bucket_iam_member" "thanos_bucket_admin" {
+  bucket = "thanos-metrics-bucket"
+  role   = "roles/storage.objectAdmin" # Read/Write access
+  member = "serviceAccount:${google_service_account.thanos_sa.email}"
+}
+
+resource "google_service_account_iam_member" "workload_identity_binding" {
+  service_account_id = google_service_account.thanos_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:project-0-devops.svc.id.goog[platform-monitoring/thanos]"
+}

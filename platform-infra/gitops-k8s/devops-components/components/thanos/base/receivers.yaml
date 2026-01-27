@@ -1,0 +1,145 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: thanos-objstore-config
+type: Opaque
+stringData:
+  thanos.yaml: |
+    type: GCS
+    config:
+      bucket: "thanos-metrics-bucket"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thanos-receive-hashring
+  labels:
+    app: thanos-receive
+data:
+  hashring.json: |
+    [
+      {
+        "hashring": "soft-tenants",
+        "endpoints": [
+          "thanos-receive-0.thanos-receive-headless.monitoring.svc.cluster.local:10901",
+          "thanos-receive-1.thanos-receive-headless.monitoring.svc.cluster.local:10901",
+          "thanos-receive-2.thanos-receive-headless.monitoring.svc.cluster.local:10901"
+        ]
+      }
+    ]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: thanos
+  namespace: monitoring
+  annotations:
+    iam.gke.io/gcp-service-account: "thanos-writer@devops-project-id.iam.gserviceaccount.com"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: thanos-receive
+spec:
+  serviceName: thanos-receive
+  replicas: 3 # HA for ingestion
+  selector:
+    matchLabels:
+      app: thanos-receive
+  template:
+    metadata:
+      labels:
+        app: thanos-receive
+    spec:
+      serviceAccountName: thanos
+      automountServiceAccountToken: true
+      containers:
+      - name: thanos-receive
+        image: quay.io/thanos/thanos:v0.32.0
+        args:
+        - receive
+        - --tsdb.retention=12h # Keep local buffer short
+        - --objstore.config-file=/etc/thanos/thanos.yaml
+        - --label=receive_cluster="hub"
+        - --remote-write.address=0.0.0.0:19291
+        - --receive.local-endpoint=$(POD_NAME).thanos-receive-headless.monitoring.svc.cluster.local:10901
+        - --receive.hashrings-file=/var/lib/thanos-receive/hashring.json
+        ports:
+        - containerPort: 19291
+          name: remote-write
+        - containerPort: 10902
+          name: grpc
+        volumeMounts:
+        - name: data
+          mountPath: /var/thanos/receive
+        - name: config
+          mountPath: /etc/thanos
+      volumes:
+      - name: config
+        projected:
+          sources:
+          - configMap:
+              name: thanos-receive-hashring
+          - secret:
+              name: thanos-objstore-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
+---
+# Headless Service for Receive
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-receive-headless
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: grpc
+    port: 10901
+    targetPort: 10901
+  - name: remote-write
+    port: 19291
+    targetPort: 19291
+  selector:
+    app: thanos-receive
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-receive-ingress
+spec:
+  type: ClusterIP # The Gateway API will attach to this
+  selector:
+    app: thanos-receive # Selects ALL replicas (0, 1, 2)
+  ports:
+  - name: remote-write
+    port: 19291
+    targetPort: 19291
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: thanos-receive-route
+spec:
+  parentRefs:
+    - name: https-default-internal
+      namespace: platform-gateways
+      kind: Gateway
+      sectionName: https-thanos-receive-airpay-codes
+  hostnames:
+    - "thanos-receive.airpay.codes"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/receive
+      backendRefs:
+        - name: thanos-receive
+          port: 19291

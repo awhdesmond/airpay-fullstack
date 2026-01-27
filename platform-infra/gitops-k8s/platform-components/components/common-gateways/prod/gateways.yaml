@@ -2,44 +2,76 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: https-default-gw-params
+  name: https-default-gw-external-params
   namespace: platform-gateways
 spec:
   kube:
     service:
       extraAnnotations:
         cloud.google.com/l4-rbs: "enabled"
-        networking.gke.io/load-balancer-ip-addresses: "project-0-devops-gke-gateway"
+        networking.gke.io/load-balancer-ip-addresses: "gke-https-default-gw-external"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: https-default
+  name: https-default-external
   namespace: platform-gateways
 spec:
   gatewayClassName: kgateway
   infrastructure:
     parametersRef:
-      name: https-default-gw-params
+      name: https-default-gw-external-params
       group: gateway.kgateway.dev
       kind: GatewayParameters
   listeners:
-    # LISTENER 1: HTTP (Port 80)
-    # Required for Let's Encrypt to "call you" to verify ownership
-    - name: http
-      protocol: HTTP
-      port: 80
-      allowedRoutes:
-        namespaces:
-          from: All
-    - name: https-atlantis-airpay-codes
+    - name: https-wildcard-airpay-codes
       protocol: HTTPS
       port: 443
-      hostname: "atlantis.airpay.codes"
+      hostname: "*.airpay.codes"
       tls:
         mode: Terminate
         certificateRefs:
-          - name: atlantis-tls-secret-airpay
+          - name: wildcard-tls-secret-airpay
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: https-default-gw-internal-params
+  namespace: platform-gateways
+spec:
+  kube:
+    service:
+      extraAnnotations:
+        cloud.google.com/l4-rbs: "enabled"
+        networking.gke.io/load-balancer-type: "Internal"
+        networking.gke.io/internal-load-balancer-allow-global-access: "true"
+        networking.gke.io/load-balancer-ip-addresses: "gke-https-default-gw-internal"
+        networking.gke.io/internal-load-balancer-subnet: "subnet-default"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: https-default-internal
+  namespace: platform-gateways
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: https-default-gw-internal-params
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+  listeners:
+    - name: https-wildcard-airpay-codes
+      protocol: HTTPS
+      port: 443
+      hostname: "*.airpay.codes"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-tls-secret-airpay
       allowedRoutes:
         namespaces:
           from: All

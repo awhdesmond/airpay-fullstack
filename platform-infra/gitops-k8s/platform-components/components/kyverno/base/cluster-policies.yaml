@@ -17,7 +17,6 @@ spec:
           namespaces:
           - kube-system
           - kube-public
-          - kyverno
           - platform-gateways # Don't lock down your gateway namespace blindly
     generate:
       apiVersion: networking.k8s.io/v1
@@ -68,17 +67,26 @@ spec:
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: generate-pod-security-polcies
+  name: generate-namespace-labels
 spec:
   rules:
-  - name: add-baseline-label
+  - name: add-namespace-labels
     match:
       resources:
         kinds:
         - Namespace
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kube-system
+          - kube-public
     mutate:
       patchStrategicMerge:
         metadata:
           labels:
+            # PSS
             pod-security.kubernetes.io/enforce: baseline
             pod-security.kubernetes.io/enforce-version: latest
+            # Ambient Mesh
+            istio.io/dataplane-mode: ambient

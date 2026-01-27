@@ -4,6 +4,8 @@ kind: Kustomization
 namespace: platform-secrets
 
 resources:
+- crds/secrets-store.csi.x-k8s.io_secretproviderclasses.yaml
+- crds/secrets-store.csi.x-k8s.io_secretproviderclasspodstatuses.yaml
 - templates/crds-upgrade-hook.yaml
 - templates/csidriver.yaml
 - templates/keep-crds-upgrade-hook.yaml

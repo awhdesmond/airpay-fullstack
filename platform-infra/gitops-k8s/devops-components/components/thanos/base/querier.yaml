@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-query
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: thanos-query
+  template:
+    metadata:
+      labels:
+        app: thanos-query
+    spec:
+      containers:
+      - name: thanos-query
+        image: quay.io/thanos/thanos:v0.32.0
+        args:
+        - query
+        - --http-address=0.0.0.0:9090
+        # 1. Talk to the Store Gateway (Historical)
+        - --store=dnssrv+_grpc._tcp.thanos-store-headless.monitoring.svc.cluster.local
+        # 2. Talk to the Receivers (Live)
+        - --store=dnssrv+_grpc._tcp.thanos-receive-headless.monitoring.svc.cluster.local
+        # 3. Enable Deduplication (Critical)
+        - --query.replica-label=replica
+        ports:
+        - containerPort: 9090
+          name: http
+        - containerPort: 10901
+          name: grpc
