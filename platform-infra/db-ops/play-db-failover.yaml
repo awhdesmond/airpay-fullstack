@@ -1,0 +1,51 @@
+---
+- name: 🚨 DISASTER RECOVERY - Promote DR Region to Primary 🚨
+  hosts: failover_nodes
+  become: yes
+  vars:
+    patroni_enable_standby_mode: false
+
+  tasks:
+    - name: 🛑 PAUSE - Require Manual Confirmation
+      pause:
+        prompt: "WARNING: You are about to promote the DR cluster. This splits the database history (Split Brain) if the Main region is still active. Type 'PROMOTE' to confirm."
+      register: confirmation_input
+
+    - name: Abort if not confirmed
+      fail:
+        msg: "Failover aborted by user."
+      when: confirmation_input.user_input != 'PROMOTE'
+
+    # --- Step 1: Update Configuration ---
+    - name: Remove 'standby_cluster' config from Patroni
+      template:
+        src: templates/patroni.yml.j2
+        dest: /etc/patroni/config.yml
+      # We notify restart immediately because in a DR scenario, we want immediate action
+      notify: Restart Patroni
+
+    # --- Step 2: Trigger Promotion ---
+    - name: Force Patroni Restart to apply promotion
+      meta: flush_handlers
+
+    # --- Step 3: Verify Status ---
+    - name: Wait for Patroni API to be available
+      wait_for:
+        port: 8008
+        delay: 5
+
+    - name: Check Cluster Health via Patroni API
+      uri:
+        url: "http://127.0.0.1:8008/cluster"
+        return_content: yes
+      register: patroni_status
+
+    - name: Display Cluster Status
+      debug:
+        msg: "Current Cluster Leader is: {{ patroni_status.json.members | selectattr('role', 'equalto', 'leader') | map(attribute='name') | list }}"
+
+  handlers:
+    - name: Restart Patroni
+      systemd:
+        name: patroni
+        state: restarted

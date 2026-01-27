@@ -1,12 +1,16 @@
 plugin: google.cloud.gcp_compute
 projects:
   - project-1-prod-payments
-auth_kind: serviceaccount
-service_account_file: /path/to/sa_key.json
+auth_kind: application
+
+# Standard filters to ignore terminated instances
+filters:
+  - status = RUNNING
+  - tags.items = postgres-hs
 
 # Grouping logic based on Terraform labels
 groups:
-  etcd: "labels.is_etcd == 'true'"
+  main_nodes: "labels.is_failover != 'true'"
   async_nodes: "labels.is_async == 'true'"
   backup_nodes: "labels.is_backup == 'true'"
   failover_nodes: "labels.is_failover == 'true'"
@@ -15,8 +19,13 @@ hostnames:
   - name
 
 compose:
+  ansible_host: name
+  zone: zone
+  project: project
+
   # Map GCE device names to variables for the storage role
   # GCE maps "device_name" to /dev/disk/by-id/google-<device_name>
   etcd_dev: "'/dev/disk/by-id/google-etcd-data'"
   pg_dev: "'/dev/disk/by-id/google-pg-data'"
   internal_ip: networkInterfaces[0].networkIP
+

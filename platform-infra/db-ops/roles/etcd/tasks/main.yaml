@@ -43,7 +43,7 @@
     owner: root
     group: root
     mode: '0644'
-  notify: restart etcd
+  notify: Restart etcd
 
 - name: Enable and start etcd service
   service:

@@ -29,7 +29,7 @@
     owner: postgres
     group: postgres
     mode: '0640'
-  notify: restart patroni
+  notify: Restart Patroni
 
 - name: Ensure PostgreSQL is stopped (Patroni will manage it)
   service:
@@ -50,7 +50,7 @@
       ExecStart=/usr/local/bin/patroni /etc/patroni/patroni.yml
       Restart=always
     state: present
-  notify: reload systemd
+  notify: Reload systemd
 
 - name: Wait for Patroni REST API to be ready
   ansible.builtin.wait_for:

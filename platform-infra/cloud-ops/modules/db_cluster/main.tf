@@ -7,6 +7,10 @@ locals {
   boot_disk_type = "pd-balanced"
 }
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 1. Service Account
+# ---------------------------------------------------------------------------------------------------------------------
+
 resource "google_service_account" "db_cluster_sa" {
   account_id   = "${var.db_cluster_name}-sa"
   display_name = "${var.db_cluster_name} Service Account"
@@ -14,6 +18,7 @@ resource "google_service_account" "db_cluster_sa" {
 
 resource "google_project_iam_member" "snapshot_permissions" {
   for_each = toset([
+    "roles/logging.logWriter",
     "roles/compute.storageAdmin",       # Full control over snapshots and disks
     "roles/compute.instanceAdmin.v1",   # Required if performing guest-flush/quiescing
     "roles/compute.resourceAdmin"       # Required to create/attach Resource Policies
@@ -24,8 +29,12 @@ resource "google_project_iam_member" "snapshot_permissions" {
   member  = "serviceAccount:${google_service_account.db_cluster_sa.email}"
 }
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 2. Disks
+# ---------------------------------------------------------------------------------------------------------------------
+
 resource "google_compute_disk" "pg_disk" {
-  for_each = { for node in var.pg_nodes : node.name => instance }
+  for_each = { for node in var.db_nodes : node.name => instance }
 
   name = "${each.key}-pg-data"
   zone = each.value.zone
@@ -34,8 +43,7 @@ resource "google_compute_disk" "pg_disk" {
 }
 
 resource "google_compute_disk" "etcd_disk" {
-  # Filter the loop to only create disks for nodes where is_etcd is true
-  for_each = { for node in var.pg_nodes : node.name => instance }
+  for_each = { for node in var.db_nodes : node.name => instance }
 
   name = "${each.key}-etcd-data"
   zone = each.value.zone
@@ -43,15 +51,71 @@ resource "google_compute_disk" "etcd_disk" {
   size = local.etcd_disk_size # Etcd data is small
 }
 
-resource "google_compute_instance" "pg_nodes" {
-  for_each = { for node in var.pg_nodes : node.name => instance }
+# ---------------------------------------------------------------------------------------------------------------------
+# 3. Networking
+# ---------------------------------------------------------------------------------------------------------------------
+
+resource "google_compute_address" "db_nodes_internal_ip" {
+  for_each = { for node in var.db_nodes : node.name => instance }
+
+  name         = "pg-internal-ip-main-${each.value.name}"
+  subnetwork   = each.value.is_failover ? var.db_nodes_subnet_failover : var.db_nodes_subnet_main
+  address_type = "INTERNAL"
+}
+
+resource "google_compute_firewall" "allow_internal_postgres_ha" {
+  name    = "allow-internal-postgres-ha-${var.db_cluster_name}"
+  network = var.db_nodes_vpc_network
+
+  allow {
+    protocol = "tcp"
+    ports = [
+      "5432", # PostgreSQL Replication & Client Access
+      "2379", # Etcd Client API (Patroni talking to DCS)
+      "2380", # Etcd Peer API (Etcd nodes syncing with each other)
+      "8008"  # Patroni REST API (Leader elections & Health checks)
+    ]
+  }
+
+  # This rule applies effectively across regions
+  # provided they are in the same VPC.
+  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
+  source_tags = [var.db_cluster_name]
+  target_tags = [var.db_cluster_name]
+}
+
+resource "google_compute_firewall" "allow_iap_ssh" {
+  name    = "allow-iap-ssh-${var.db_cluster_name}"
+  network = var.db_nodes_vpc_network
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  # This is the specific range Google uses for IAP forwarding
+  source_ranges = ["35.235.240.0/20"]
+  target_tags   = [var.db_cluster_name]
+}
+
+locals {
+  backup_node = one([for node in var.db_nodes : node if node.is_backup == "true"])
+}
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 4. Nodes
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+resource "google_compute_instance" "db_nodes" {
+  for_each = { for node in var.db_nodes : node.name => instance }
 
   name         = each.key
   machine_type = each.value.machine_type
   zone         = each.value.zone
 
   labels = {
-    is_etcd     = each.value.is_etcd
     is_async    = each.value.is_async
     is_backup   = each.value.is_backup
     is_failover = each.value.is_failover
@@ -69,7 +133,7 @@ resource "google_compute_instance" "pg_nodes" {
 
   boot_disk {
     initialize_params {
-      image = var.pg_nodes_os_image
+      image = var.db_nodes_os_image
       size  = local.pg_boot_disk_size
       type  = local.boot_disk_type
     }
@@ -88,8 +152,9 @@ resource "google_compute_instance" "pg_nodes" {
   }
 
   network_interface {
-    network    = var.pg_nodes_vpc_network
+    network    = var.db_nodes_vpc_network
     subnetwork = each.value.subnet
+    network_ip = google_compute_address.db_nodes_internal_ip[each.key].address
   }
 
   service_account {
@@ -100,48 +165,13 @@ resource "google_compute_instance" "pg_nodes" {
   }
 }
 
-# Allows all nodes with tag 'db-cluster-prod' to talk to each other
-resource "google_compute_firewall" "allow_internal_postgres_ha" {
-  name    = "allow-internal-postgres-ha-${var.db_cluster_name}"
-  network = var.pg_nodes_vpc_network
 
-  allow {
-    protocol = "tcp"
-    ports = [
-      "5432", # PostgreSQL Replication & Client Access
-      "2379", # Etcd Client API (Patroni talking to DCS)
-      "2380", # Etcd Peer API (Etcd nodes syncing with each other)
-      "8008"  # Patroni REST API (Leader elections & Health checks)
-    ]
-  }
+# ---------------------------------------------------------------------------------------------------------------------
+# 5. Disk backups
+# ---------------------------------------------------------------------------------------------------------------------
 
-  # This rule applies effectively across regions
-  # provided they are in the same VPC.
-  source_tags = [var.db_cluster_name]
-  target_tags = [var.db_cluster_name]
-}
-
-resource "google_compute_firewall" "allow_iap_ssh" {
-  name    = "allow-iap-ssh-${var.db_cluster_name}"
-  network = var.pg_nodes_vpc_network
-
-  allow {
-    protocol = "tcp"
-    ports    = ["22"]
-  }
-
-  # This is the specific range Google uses for IAP forwarding
-  source_ranges = ["35.235.240.0/20"]
-  target_tags   = [var.db_cluster_name]
-}
-
-locals {
-  backup_node = one([for node in var.pg_nodes : node if node.is_backup == "true"])
-}
-
-# Cloud Scheduler Job to trigger a Snapshot every 15 mins
 resource "google_cloud_scheduler_job" "snapshot_15min" {
-  name             = "postgres-15min-snapshot-trigger"
+  name             = "${var.db_cluster_name}-15min-snapshot-trigger"
   description      = "Triggers a snapshot for Postgres disk every 15 mins"
   schedule         = "*/15 * * * *"
   time_zone        = "UTC"
@@ -160,4 +190,63 @@ resource "google_cloud_scheduler_job" "snapshot_15min" {
       "name": "pg-backup-${var.db_cluster_name}-${formatdate("YYYYMMDD-hhmm", timestamp())}"
     }))
   }
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 6. Load Balancer
+# ---------------------------------------------------------------------------------------------------------------------
+
+resource "google_compute_instance_group" "pg_ig_main" {
+  name        = "${var.db_cluster_name}-ig-main"
+  description = "Postgres Main Cluster Instance Group"
+
+  # dynamically add all nodes from the main region
+  instances = [
+   for node in var.db_nodes: google_compute_instance.db_nodes[node.name].self_link
+   if node.is_failover == "false" && node.is_backup == "false"
+  ]
+
+  named_port {
+    name = "patroni"
+    port = 8008
+  }
+
+  named_port {
+    name = "postgres"
+    port = 5432
+  }
+}
+
+resource "google_compute_health_check" "pg_hc_master" {
+  name               = "${var.db_cluster_name}-hc-master"
+  check_interval_sec = 10
+  timeout_sec        = 5
+
+  http_health_check {
+    port         = 8008
+    request_path = "/master" # Specific Patroni endpoint
+  }
+}
+
+resource "google_compute_region_backend_service" "pg_backend_main" {
+  name                  = "${var.db_cluster_name}-pg-backend-main"
+  region                = var.region_main
+  load_balancing_scheme = "INTERNAL"
+  protocol              = "TCP"
+  backend {
+    group          = google_compute_instance_group.pg_ig_main.id
+    balancing_mode = "CONNECTION"
+  }
+
+  health_checks = [google_compute_health_check.pg_hc_master.id]
+}
+
+resource "google_compute_forwarding_rule" "pg_lb_frontend" {
+  name                  = "${var.db_cluster_name}-pg-lb-frontend"
+  region                = var.region_main
+  load_balancing_scheme = "INTERNAL"
+  backend_service       = google_compute_region_backend_service.pg_backend_main.id
+  ports                 = ["5432"]
+  network               = var.db_nodes_vpc_network
+  subnetwork            = google_compute_subnetwork.subnet_main.id
 }

@@ -1,9 +1,11 @@
-# In group_vars/all.yml or play vars
-etcd_initial_cluster: >-
+etcd_main_initial_cluster: >-
   {% set cluster = [] %}
   {% for host in groups['etcd'] %}
-    {# Use the internal IP that Ansible discovered #}
     {% set ip = hostvars[host]['ansible_default_ipv4']['address'] %}
     {% set _ = cluster.append(host ~ '=http://' ~ ip ~ ':2380') %}
   {% endfor %}
   {{ cluster | join(',') }}
+
+etcd_failover_initial_cluster: "{{ inventory_hostname }}=http://{{ ansible_default_ipv4.address }}:2380"
+
+etcd_initial_cluster: "{{ etcd_main_initial_cluster if is_failover not in group_names else etcd_failover_initial_cluster }}"

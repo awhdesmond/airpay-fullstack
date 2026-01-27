@@ -1,4 +1,4 @@
-scope: {{ patroni_cluster_name }}
+scope: {{ 'postgres-main' if 'is_failover' not in group_names else 'postgres-dr' }}
 name: {{ inventory_hostname }}
 
 restapi:
@@ -18,11 +18,14 @@ bootstrap:
     synchronous_mode: true
     postgresql:
       use_pg_rewind: true
+      use_slots: true
       parameters:
-        archive_mode: "on"
         wal_level: replica
+        hot_standby: on
+        wal_keep_segments: 8
         max_wal_senders: 10
         max_replication_slots: 10
+        hot_standby_feedback: on
 
 postgresql:
   listen: {{ ansible_default_ipv4.address }}:5432
@@ -36,7 +39,18 @@ postgresql:
     superuser:
       username: postgres
       password: {{ super_password }}
+  parameters:
+    unix_socket_directories: '.'
 
 tags:
-  osync: {{ 'true' if labels.is_async == 'true' else 'false' }}
+  nosync: {{ 'true' if labels.is_async == 'true' else 'false' }}
   nofailover: {{ 'true' if labels.is_backup == 'true' else 'false' }}
+
+# --- DR Configuration ---
+{% if 'is_failover' in group_names and patroni_enable_standby_mode | default(true) %}
+standby_cluster:
+  # Point to any main node, Patroni handles redirection
+  host: {{ groups['main_nodes'] | map('extract', hostvars, 'ansible_host') | first }}
+  port: 5432
+  primary_slot_name: dr_slot
+{% endif %}

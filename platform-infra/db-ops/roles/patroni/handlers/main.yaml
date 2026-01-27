@@ -1,0 +1,10 @@
+ handlers:
+  - name: Reload systemd
+    ansible.builtin.systemd:
+      daemon_reload: yes
+
+  - name: Restart patroni
+    ansible.builtin.service:
+      name: Patroni
+      state: restarted
+      enabled: yes
