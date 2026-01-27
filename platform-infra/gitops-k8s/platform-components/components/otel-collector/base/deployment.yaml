@@ -16,7 +16,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: opentelemetry-collector
-  namespace: opentelemetry
   labels:
     app: opentelemetry-collector
 spec:
@@ -30,8 +29,7 @@ spec:
         app: opentelemetry-collector
     spec:
       serviceAccountName: opentelemetry-collector
-      securityContext:
-        {}
+      securityContext: {}
       containers:
         - name: opentelemetry-collector
           imagePullPolicy: Always
@@ -47,6 +45,8 @@ spec:
               containerPort: 4318
               protocol: TCP
           env:
+            - name: MY_CLUSTER
+              value: CLUSTER
             - name: MY_POD_IP
               valueFrom:
                 fieldRef:

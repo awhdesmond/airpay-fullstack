@@ -8,9 +8,9 @@ spec:
     - name: https-default-external
       namespace: platform-gateways
       kind: Gateway
-      sectionName: https-argocd-airpay-codes
+      sectionName: https-wildcard-airpay-com
   hostnames:
-    - "argocd.airpay.codes"
+    - "argocd.airpay.com"
   rules:
     - matches:
         - path:

@@ -9,9 +9,9 @@ spec:
     - name: https-default-external
       namespace: platform-gateways
       kind: Gateway
-      sectionName: https-atlantis-airpay-codes
+      sectionName: https-atlantis-airpay-com
   hostnames:
-    - "atlantis.airpay.codes"
+    - "atlantis.airpay.com"
   rules:
     - matches:
         - path:

@@ -132,9 +132,9 @@ spec:
     - name: https-default-internal
       namespace: platform-gateways
       kind: Gateway
-      sectionName: https-thanos-receive-airpay-codes
+      sectionName: https-thanos-receive-airpay-com
   hostnames:
-    - "thanos-receive.airpay.codes"
+    - "thanos-receive.airpay.com"
   rules:
     - matches:
         - path:

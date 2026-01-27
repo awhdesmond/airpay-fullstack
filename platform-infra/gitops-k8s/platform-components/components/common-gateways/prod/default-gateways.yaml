@@ -24,14 +24,14 @@ spec:
       group: gateway.kgateway.dev
       kind: GatewayParameters
   listeners:
-    - name: https-wildcard-airpay-codes
+    - name: https-wildcard-airpay-com
       protocol: HTTPS
       port: 443
-      hostname: "*.airpay.codes"
+      hostname: "*.airpay.com"
       tls:
         mode: Terminate
         certificateRefs:
-          - name: wildcard-tls-secret-airpay
+          - name: wildcard-tls-secret-external-airpay
       allowedRoutes:
         namespaces:
           from: All
@@ -64,14 +64,14 @@ spec:
       group: gateway.kgateway.dev
       kind: GatewayParameters
   listeners:
-    - name: https-wildcard-airpay-codes
+    - name: https-wildcard-airpay-com
       protocol: HTTPS
       port: 443
-      hostname: "*.airpay.codes"
+      hostname: "*.airpay.com"
       tls:
         mode: Terminate
         certificateRefs:
-          - name: wildcard-tls-secret-airpay
+          - name: wildcard-tls-secret-internal-airpay
       allowedRoutes:
         namespaces:
           from: All

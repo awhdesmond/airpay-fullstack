@@ -1,0 +1,22 @@
+---
+# To apply WAF
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: https-gcp-external
+  annotations:
+    networking.gke.io/certmap: store-example-com-map
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  listeners:
+  - name: https-wildcard-airpay-com
+    protocol: HTTPS
+    port: 443
+    hostname: "*.airpay.com"
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: wildcard-tls-secret-external-airpay
+    allowedRoutes:
+        namespaces:
+          from: All

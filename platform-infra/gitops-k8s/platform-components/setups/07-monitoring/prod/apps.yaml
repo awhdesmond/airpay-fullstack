@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-monitoring
+  namespace: platform-argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: devops
+            url: https://kubernetes.default.svc
+    - clusters:
+        selector:
+          matchLabels:
+            env: prod
+  template:
+    metadata:
+      name: 'app-monitoring-{{ name }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/airpay/infrastructure.git
+        targetRevision: HEAD
+        path: gitops-k8s/platform/setups/07-monitoring/prod
+        kustomize:
+          patches:
+            - target:
+                kind: Deployment
+                name: opentelemetry-collector
+              patch: |-
+                - op: add
+                  path: /spec/template/spec/containers/0/env/-
+                  value:
+                    name: MY_CLUSTER
+                    value: "{{name}}"
+      destination:
+        server: '{{server}}' # The API URL of the remote cluster
+        namespace: platform-monitoring
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

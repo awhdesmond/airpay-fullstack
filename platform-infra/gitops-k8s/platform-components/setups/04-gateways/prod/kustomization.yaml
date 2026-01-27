@@ -6,3 +6,4 @@ namespace: platform-gateways
 resources:
 - ../../../components/gateway-api/prod
 - ../../../components/kgateway/prod
+- ../../../components/common-gateways/prod
