@@ -1,0 +1,19 @@
+etcd_endpoints: >-
+  {% set endpoints = [] %}
+  {% for host in groups['etcd'] %}
+    {% set _ = endpoints.append(hostvars[host]['networkInterfaces'][0]['networkIP'] ~ ':2379') %}
+  {% endfor %}
+  {{ endpoints | join(',') }}
+
+# Construct the initial cluster string for etcd's own config: name=http://<ip>:2380,...
+etcd_initial_cluster: >-
+  {% set cluster = [] %}
+  {% for host in groups['etcd'] %}
+    {# Use the internal IP that Ansible discovered #}
+    {% set ip = hostvars[host]['ansible_default_ipv4']['address'] %}
+    {% set _ = cluster.append(host ~ '=http://' ~ ip ~ ':2380') %}
+  {% endfor %}
+  {{ cluster | join(',') }}
+
+patroni_postgresql_data_dir: "/var/lib/postgresql/data"
+patroni_postgresql_bin_dir: "/usr/lib/postgresql/17/bin"

@@ -1,0 +1,9 @@
+# In group_vars/all.yml or play vars
+etcd_initial_cluster: >-
+  {% set cluster = [] %}
+  {% for host in groups['etcd'] %}
+    {# Use the internal IP that Ansible discovered #}
+    {% set ip = hostvars[host]['ansible_default_ipv4']['address'] %}
+    {% set _ = cluster.append(host ~ '=http://' ~ ip ~ ':2380') %}
+  {% endfor %}
+  {{ cluster | join(',') }}

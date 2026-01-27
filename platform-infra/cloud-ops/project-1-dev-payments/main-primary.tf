@@ -1,5 +1,5 @@
 locals {
-  vpc_name            = "vpc-primary-default"
+  vpc_name            = "vpc-default"
   subnet_name_default = "subnet-default"
   subnet_name_gke     = "subnet-gke"
   region              = var.region_primary

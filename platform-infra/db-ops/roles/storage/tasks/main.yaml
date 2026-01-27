@@ -1,0 +1,38 @@
+---
+# roles/storage/tasks/main.yml
+- name: Create mount points
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /var/lib/etcd
+    - /var/lib/postgresql
+
+- name: Format Postgres Disk using persistent ID
+  filesystem:
+    fstype: xfs
+    dev: "/dev/disk/by-id/google-pg-data"
+
+- name: Format etcd Disk (only on etcd nodes)
+  filesystem:
+    fstype: ext4
+    dev: "/dev/disk/by-id/google-etcd-data"
+    opts: "-m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard"
+  when: "'etcd' in group_names"
+
+- name: Mount etcd disk
+  mount:
+    path: /var/lib/etcd
+    src: "{{ etcd_dev }}"
+    fstype: ext4
+    opts: "defaults,discard,nofail"
+    state: mounted
+  when: "'etcd' in group_names"
+
+- name: Mount Postgres disk
+  mount:
+    path: /var/lib/postgresql
+    src: "{{ pg_dev }}"
+    fstype: xfs
+    state: mounted

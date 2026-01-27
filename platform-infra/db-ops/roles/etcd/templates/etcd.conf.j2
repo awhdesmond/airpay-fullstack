@@ -1,0 +1,26 @@
+# /etc/default/etcd
+
+# Node Identity
+ETCD_NAME="{{ inventory_hostname }}"
+ETCD_DATA_DIR="/var/lib/etcd/default"
+
+# Networking - Listen on the Internal IP (required for private VPCs)
+# 0.0.0.0 is safer for listening than specific IPs to avoid binding issues
+ETCD_LISTEN_PEER_URLS="http://0.0.0.0:2380"
+ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:2379"
+
+# Advertisement - Tell others to contact me on my Internal VPC IP
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://{{ ansible_default_ipv4.address }}:2380"
+ETCD_ADVERTISE_CLIENT_URLS="http://{{ ansible_default_ipv4.address }}:2379"
+
+# Clustering - The "Handshake"
+# This variable should be defined in group_vars or the playbook using Jinja loops
+ETCD_INITIAL_CLUSTER="{{ etcd_initial_cluster }}"
+
+ETCD_INITIAL_CLUSTER_STATE="new"
+ETCD_INITIAL_CLUSTER_TOKEN="pg-ha-cluster-prod"
+
+# Performance Tuning for Cloud (Latency Tolerance)
+# GCE disk latency can occasionally spike; 5000ms helps prevent false leader elections
+ETCD_HEARTBEAT_INTERVAL=500
+ETCD_ELECTION_TIMEOUT=5000

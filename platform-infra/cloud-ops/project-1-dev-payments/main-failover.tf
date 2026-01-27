@@ -1,10 +1,9 @@
 locals {
-  vpc_name            = "vpc-failover-default"
-  subnet_name_default = "subnet-default"
-  subnet_name_gke     = "subnet-gke"
   region              = var.region_failover
+  subnet_name_default = "failover-subnet-default"
+  subnet_name_gke     = "failover-subnet-gke"
 
-  gke_cluster_name           = "default"
+  gke_cluster_name           = "failover-default"
   gke_cluster_pod_range_name = "gke-pod-cidr"
   gke_cluster_svc_range_name = "gke-service-cidr"
 }
@@ -13,12 +12,7 @@ locals {
 # 1. NETWORKING
 # ---------------------------------------------------------------------------------------------------------------------
 
-module "vpc" {
-  source   = "../modules/gcp/vpc"
-  vpc_name = local.vpc_name
-}
-
-module "subnet_default" {
+module "failover_subnet_default" {
   source = "../modules/gcp/subnet"
   vpc_id = module.vpc.vpc_id
   region = local.region
@@ -27,7 +21,7 @@ module "subnet_default" {
   subnet_primary_ip_cidr = "10.100.0.0/16"
 }
 
-module "subnet_gke" {
+module "failover_subnet_gke" {
   source = "../modules/gcp/subnet"
 
   vpc_id = module.vpc.vpc_id
@@ -45,13 +39,13 @@ module "subnet_gke" {
 # 1.1 HA NAT Gateways
 # ---------------------------------------------------------------------------------------------------------------------
 
-module "ha_nat_gateways" {
+module "failover_ha_nat_gateways" {
   source = "../modules/gcp/ha_nat_gateways"
 
-  name        = "ha-nat-gateways"
+  name        = "failover-ha-nat-gateways"
   region      = local.region
   vpc_name    = local.vpc_name
-  subnet_name = local.subnet_name_default
+  subnet_name = local.failover_subnet_name_default
 
   route_network_tags = ["gke-nodes-${local.gke_cluster_name}"]
 }
@@ -60,7 +54,7 @@ module "ha_nat_gateways" {
 # 2. GKE
 # ---------------------------------------------------------------------------------------------------------------------
 
-module "gke_cluster_default" {
+module "failover_gke_cluster_default" {
   source = "../modules/gcp/gke"
 
   project_id   = var.project_id

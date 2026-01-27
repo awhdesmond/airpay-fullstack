@@ -1,0 +1,59 @@
+---
+- name: Install PostgreSQL and Patroni
+  apt:
+    name:
+      - postgresql-17
+      - python3-pip
+      - python3-psycopg2
+      - python3-cryptography # For SSL/TLS in DCS communication
+    state: present
+
+- name: Install Patroni via pip
+  ansible.builtin.pip:
+    name: "patroni[etcd]"
+    state: present
+    executable: pip3
+
+- name: Create Patroni configuration directory
+  ansible.builtin.file:
+    path: /etc/patroni
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+
+- name: Generate Patroni configuration file
+  ansible.builtin.template:
+    src: patroni.yml.j2
+    dest: /etc/patroni/patroni.yml
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  notify: restart patroni
+
+- name: Ensure PostgreSQL is stopped (Patroni will manage it)
+  service:
+    name: postgresql
+    state: stopped
+    enabled: no
+
+- name: Setup Patroni systemd service
+  copy:
+    dest: /etc/systemd/system/patroni.service
+    content: |
+      [Unit]
+      Description=Patroni PostgreSQL HA
+      After=network.target etcd.service
+      [Service]
+      Type=simple
+      User=postgres
+      ExecStart=/usr/local/bin/patroni /etc/patroni/patroni.yml
+      Restart=always
+    state: present
+  notify: reload systemd
+
+- name: Wait for Patroni REST API to be ready
+  ansible.builtin.wait_for:
+    host: "{{ ansible_default_ipv4.address }}"
+    port: "{{ patroni_restapi_port }}"
+    timeout: 30

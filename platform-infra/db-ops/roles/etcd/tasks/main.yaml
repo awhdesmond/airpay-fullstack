@@ -1,0 +1,52 @@
+---
+- name: Install etcd binaries
+  apt:
+    name: etcd-server
+    state: present
+    update_cache: yes
+
+- name: Stop etcd service initially
+  service:
+    name: etcd
+    state: stopped
+    enabled: yes
+
+- name: Ensure etcd user and group exist
+  group:
+    name: etcd
+    state: present
+  register: etcd_group
+
+- name: Create etcd user
+  user:
+    name: etcd
+    group: etcd
+    system: yes
+    shell: /bin/false
+    home: /var/lib/etcd
+
+# CRITICAL: The mount point /var/lib/etcd is likely owned by root after mounting.
+# We must change it to 'etcd' user, otherwise the service will crash immediately.
+- name: Fix permissions on etcd data directory
+  file:
+    path: /var/lib/etcd
+    state: directory
+    owner: etcd
+    group: etcd
+    mode: '0700'
+    recurse: yes
+
+- name: Deploy etcd environment configuration
+  template:
+    src: etcd.conf.j2
+    dest: /etc/default/etcd
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart etcd
+
+- name: Enable and start etcd service
+  service:
+    name: etcd
+    state: started
+    enabled: yes

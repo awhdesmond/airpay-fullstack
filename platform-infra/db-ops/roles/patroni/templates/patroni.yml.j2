@@ -1,0 +1,42 @@
+scope: {{ patroni_cluster_name }}
+name: {{ inventory_hostname }}
+
+restapi:
+  listen: {{ ansible_default_ipv4.address }}:8008
+  connect_address: {{ ansible_default_ipv4.address }}:8008
+
+etcd:
+  hosts: {{ etcd_endpoints }}
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    # Force synchronous replication for regional nodes
+    synchronous_mode: true
+    postgresql:
+      use_pg_rewind: true
+      parameters:
+        archive_mode: "on"
+        wal_level: replica
+        max_wal_senders: 10
+        max_replication_slots: 10
+
+postgresql:
+  listen: {{ ansible_default_ipv4.address }}:5432
+  connect_address: {{ ansible_default_ipv4.address }}:5432
+  data_dir: {{ patroni_postgresql_data_dir }}
+  bin_dir: {{ patroni_postgresql_bin_dir }}
+  authentication:
+    replication:
+      username: replicator
+      password: {{ repl_password }}
+    superuser:
+      username: postgres
+      password: {{ super_password }}
+
+tags:
+  osync: {{ 'true' if labels.is_async == 'true' else 'false' }}
+  nofailover: {{ 'true' if labels.is_backup == 'true' else 'false' }}

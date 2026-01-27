@@ -1,0 +1,21 @@
+---
+- name: Deploy Collocated HA Postgres + etcd with Separate Disks
+  hosts: pg_cluster
+  become: yes
+  vars:
+    repl_password: "secure_repl_pass"
+    super_password: "secure_admin_pass"
+
+  tasks:
+    - name: Run Storage Setup
+      import_role:
+        name: storage
+
+    - name: Run Etcd Setup
+      import_role:
+        name: etcd
+      when: "'etcd' in group_names"
+
+    - name: Run Patroni Setup
+      import_role:
+        name: patroni
