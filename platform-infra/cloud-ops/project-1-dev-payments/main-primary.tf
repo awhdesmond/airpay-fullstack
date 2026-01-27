@@ -48,6 +48,7 @@ module "subnet_gke" {
 module "ha_nat_gateways" {
   source = "../modules/gcp/ha_nat_gateways"
 
+  project_id  = var.project_id
   name        = "ha-nat-gateways"
   region      = local.region
   vpc_name    = local.vpc_name

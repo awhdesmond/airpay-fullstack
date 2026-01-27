@@ -112,7 +112,7 @@ spec:
     - name: https-default-internal
       namespace: platform-gateways
       kind: Gateway
-      sectionName: https-thanos-receive-airpay-com
+      sectionName: https-wildcard-airpay-com
   hostnames:
     - "thanos-receive.airpay.com"
   rules:

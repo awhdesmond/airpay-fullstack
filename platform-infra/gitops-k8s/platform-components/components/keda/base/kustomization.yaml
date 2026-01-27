@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- templates/crds/crd-cloudeventsources.yaml
+- templates/crds/crd-clustercloudeventsources.yaml
+- templates/crds/crd-clustertriggerauthentications.yaml
+- templates/crds/crd-scaledjobs.yaml
+- templates/crds/crd-scaledobjects.yaml
+- templates/crds/crd-triggerauthentications.yaml
+- templates/manager/clusterrole.yaml
+- templates/manager/clusterrolebindings.yaml
+- templates/manager/deployment.yaml
+- templates/manager/minimal-rbac.yaml
+- templates/manager/service.yaml
+- templates/manager/serviceaccount.yaml
+- templates/metrics-server/apiservice.yaml
+- templates/metrics-server/clusterrole.yaml
+- templates/metrics-server/clusterrolebinding.yaml
+- templates/metrics-server/deployment.yaml
+- templates/metrics-server/service.yaml
+- templates/metrics-server/serviceaccount.yaml
+- templates/webhooks/clusterrole.yaml
+- templates/webhooks/clusterrolebindings.yaml
+- templates/webhooks/deployment.yaml
+- templates/webhooks/service.yaml
+- templates/webhooks/serviceaccount.yaml
+- templates/webhooks/validatingconfiguration.yaml

@@ -1,0 +1,15 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: payments-scaler
+spec:
+  scaleTargetRef:
+    name: payments
+  minReplicaCount: 1
+  maxReplicaCount: 15
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: https://thanos-query.airpay.com
+        query: sum(rate(request_duration_seconds_count{cluster="default-payments", app="payments"}[2m]))
+        threshold: '1000'

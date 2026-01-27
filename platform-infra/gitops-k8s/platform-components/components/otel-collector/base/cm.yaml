@@ -113,6 +113,8 @@ data:
     exporters:
       prometheusremotewrite/thanos-receiver:
         endpoint: https://thanos-receive.airpay.codes/api/v1/write
+      kedascaler:
+        endpoint: "0.0.0.0:31333"
 
     service:
       pipelines:

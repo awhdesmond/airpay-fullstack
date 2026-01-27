@@ -1,0 +1,36 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyway-migration-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: flyway
+        image: flyway/flyway:10
+        command: ["flyway"]
+        args:
+          - "-url=jdbc:postgresql://$(DB_HOST):5432/$(DB_DATABASE)"
+          - "-user=$(DB_USERNAME)"
+          - "-password=$(DB_PASSWORD)"
+          - "-connectRetries=60"
+          - "-locations=filesystem:/conf/db/migrations/"
+          - "migrate"
+        volumeMounts:
+        - name: db-migration
+          mountPath: /conf/db/migrations
+        env:
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_USERNAME
+          value: "postgres"
+        - name: DB_PASSWORD
+          value: "postgres"
+        - name: DB_DATABASE
+          value: "postgres"
+      volumes:
+      - name: db-migration
+        configMap:
+          name: user-db-migrations
+      restartPolicy: Never

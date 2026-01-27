@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: payments
+  annotations:
+    iam.gke.io/gcp-service-account: payments-api@project-1-prod-payments.iam.gserviceaccount.com

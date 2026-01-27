@@ -1,0 +1,63 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 3
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - payments
+            topologyKey: "kubernetes.io/hostname"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          whenUnsatisfiable: ScheduleAnyway
+          topologyKey: topology.kubernetes.io/zone
+          labelSelector:
+            matchLabels:
+              app: api
+      containers:
+      - name: api
+        volumeMounts:
+        - name: secrets-store-inline
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
+        env:
+        - name: PAYMENTS_SVC_HOST
+          value: "0.0.0.0"
+        - name: PAYMENTS_SVC_PORT
+          value: "8080"
+        - name: PAYMENTS_SVC_METRICS_PORT
+          value: "9090"
+        - name: PAYMENTS_SVC_LOG_LEVEL
+          value: "debug"
+        - name: PAYMENTS_SVC_CORS_ORIGIN
+          value: "*"
+        - name: PAYMENTS_SVC_POSTGRES_HOST
+          value: "postgres-host"
+        - name: PAYMENTS_SVC_POSTGRES_PORT
+          value: "5432"
+        - name: PAYMENTS_SVC_POSTGRES_USERNAME
+          value: "postgres"
+        - name: PAYMENTS_SVC_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: payments-api-secrets
+              key: postgres-password
+        - name: PAYMENTS_SVC_POSTGRES_DATABASE
+          value: "postgres"
+      volumes:
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: payments-api-secrets

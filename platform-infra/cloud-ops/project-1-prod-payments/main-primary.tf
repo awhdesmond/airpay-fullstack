@@ -4,7 +4,7 @@ locals {
   subnet_name_gke     = "subnet-gke"
   region              = var.region_primary
 
-  gke_cluster_name           = "default"
+  gke_cluster_name           = "default-payments"
   gke_cluster_pod_range_name = "gke-pod-cidr"
   gke_cluster_svc_range_name = "gke-service-cidr"
 }
@@ -48,6 +48,7 @@ module "subnet_gke" {
 module "ha_nat_gateways" {
   source = "../modules/gcp/ha_nat_gateways"
 
+  project_id = var.project_id
   name        = "ha-nat-gateways"
   region      = local.region
   vpc_name    = local.vpc_name

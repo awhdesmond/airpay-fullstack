@@ -116,6 +116,7 @@ resource "google_compute_instance" "db_nodes" {
   zone         = each.value.zone
 
   labels = {
+    pg_cluster  = each.key
     is_async    = each.value.is_async
     is_backup   = each.value.is_backup
     is_failover = each.value.is_failover
@@ -249,4 +250,51 @@ resource "google_compute_forwarding_rule" "pg_lb_frontend" {
   ports                 = ["5432"]
   network               = var.db_nodes_vpc_network
   subnetwork            = google_compute_subnetwork.subnet_main.id
+}
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 7. Password
+# ---------------------------------------------------------------------------------------------------------------------
+
+resource "random_password" "postgres_password" {
+  length           = 16
+  special          = true
+  override_special = "!@#$%^&*()_+="
+}
+
+resource "google_secret_manager_secret" "postgres_password_secret" {
+  secret_id = "${var.db_cluster_name}-postgres-password"
+  replication {
+    auto {}
+  }
+  # Add deletion_protection to prevent accidental deletion (optional, defaults to false)
+  deletion_protection = true
+}
+
+resource "google_secret_manager_secret_version" "postgres_password_version" {
+  secret      = google_secret_manager_secret.postgres_password_secret.id
+  secret_data = random_password.postgres_password.result
+  deletion_policy = "DISABLE"
+}
+
+resource "random_password" "replicator_password" {
+  length           = 16
+  special          = true
+  override_special = "!@#$%^&*()_+="
+}
+
+resource "google_secret_manager_secret" "replicator_password_secret" {
+  secret_id = "${var.db_cluster_name}-replicator-password"
+  replication {
+    auto {}
+  }
+  # Add deletion_protection to prevent accidental deletion (optional, defaults to false)
+  deletion_protection = true
+}
+
+resource "google_secret_manager_secret_version" "database_password_version" {
+  secret      = google_secret_manager_secret.replicator_password_secret.id
+  secret_data = random_password.replicator_password.result
+  deletion_policy = "DISABLE"
 }

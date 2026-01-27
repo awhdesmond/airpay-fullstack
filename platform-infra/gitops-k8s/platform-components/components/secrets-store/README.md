@@ -20,7 +20,7 @@ helm template secrets-store-csi-driver \
 
 mv base/secrets-store-csi-driver/templates base/
 mv base/secrets-store-csi-driver/crds base/
-rm -rf charts base/secrets-store-csi-driver
+rm -rf temp_charts base/secrets-store-csi-driver
 
 pushd base
 kustomize create --autodetect --recursive

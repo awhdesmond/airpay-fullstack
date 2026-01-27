@@ -1,0 +1,24 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: payments
+commonLabels:
+  app: payments
+
+resources:
+- ../base
+- pdb.yaml
+- vpa.yaml
+- httproutes.yaml
+- secret-provider-class.yaml
+
+patches:
+- path: deployment.yaml
+- path: sa.yaml
+- path: job.yaml
+
+images:
+- name: payments
+  newName: image-name
+  newTag: 0.1.0

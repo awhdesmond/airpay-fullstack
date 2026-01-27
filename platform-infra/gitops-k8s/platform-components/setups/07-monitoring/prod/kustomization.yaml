@@ -6,3 +6,4 @@ namespace: platform-monitoring
 resources:
 - ../../../components/kube-state-metrics/prod
 - ../../../components/otel-collector/prod
+- ../../../components/keda/prod

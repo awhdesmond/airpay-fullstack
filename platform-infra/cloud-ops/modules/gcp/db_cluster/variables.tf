@@ -7,12 +7,14 @@ variable "project_id" {
 variable "region_main" {
   type = string
   nullable = false
+  default = "australia-southeast1"
   description = "Main region"
 }
 
 variable "region_failover" {
   type = string
   nullable = false
+  default = "australia-southeast2"
   description = "Failover region"
 }
 

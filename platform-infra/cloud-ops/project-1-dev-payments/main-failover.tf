@@ -42,10 +42,11 @@ module "failover_subnet_gke" {
 module "failover_ha_nat_gateways" {
   source = "../modules/gcp/ha_nat_gateways"
 
+  project_id  = var.project_id
   name        = "failover-ha-nat-gateways"
   region      = local.region
   vpc_name    = local.vpc_name
-  subnet_name = local.failover_subnet_name_default
+  subnet_name = local.subnet_name_default
 
   route_network_tags = ["gke-nodes-${local.gke_cluster_name}"]
 }

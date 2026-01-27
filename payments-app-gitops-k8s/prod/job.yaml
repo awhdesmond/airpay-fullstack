@@ -1,0 +1,35 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyway-migration-job
+spec:
+  template:
+    spec:
+      serviceAccountName: api
+      containers:
+      - name: flyway
+        volumeMounts:
+        - name: secrets-store-inline
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
+        env:
+        - name: DB_HOST
+          value: "users.ctmsm2isu4lq.eu-west-1.rds.amazonaws.com"
+        - name: DB_USERNAME
+          value: "postgres"
+        - name: DB_PASSWORD
+          value:
+          valueFrom:
+            secretKeyRef:
+              name: user-service-aws-secrets
+              key: postgres-password
+        - name: DB_DATABASE
+          value: "postgres"
+      volumes:
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: user-service-aws-secrets
