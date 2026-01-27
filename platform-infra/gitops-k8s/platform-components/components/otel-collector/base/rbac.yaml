@@ -31,7 +31,7 @@ metadata:
     app.kubernetes.io/version: "0.131.0"
 rules:
   - apiGroups: [""]
-    resources: ["pods", "namespaces", "nodes"]
+    resources: ["pods", "namespaces", "nodes", "services"]
     verbs: ["get", "watch", "list"]
   - apiGroups: ["apps"]
     resources: ["replicasets"]

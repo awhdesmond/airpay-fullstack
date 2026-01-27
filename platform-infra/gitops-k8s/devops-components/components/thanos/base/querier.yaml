@@ -19,14 +19,24 @@ spec:
         args:
         - query
         - --http-address=0.0.0.0:9090
-        # 1. Talk to the Store Gateway (Historical)
         - --store=dnssrv+_grpc._tcp.thanos-store-headless.monitoring.svc.cluster.local
-        # 2. Talk to the Receivers (Live)
         - --store=dnssrv+_grpc._tcp.thanos-receive-headless.monitoring.svc.cluster.local
-        # 3. Enable Deduplication (Critical)
         - --query.replica-label=replica
         ports:
         - containerPort: 9090
           name: http
         - containerPort: 10901
           name: grpc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-query
+spec:
+  type: ClusterIP
+  selector:
+    app: thanos-query
+  ports:
+  - name: http
+    port: 9090
+    targetPort: 9090

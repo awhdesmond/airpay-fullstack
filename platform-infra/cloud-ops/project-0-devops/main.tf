@@ -186,6 +186,20 @@ resource "google_project_iam_member" "prod_deployer_permissions" {
 # 5. Thanos
 # ---------------------------------------------------------------------------------------------------------------------
 
+resource "google_storage_bucket" "thanos_metrics_bucket" {
+  name          = "thanos-metrics-bucket" # Must be globally unique
+  location      = local.region
+  force_destroy = false
+
+  # Recommended: Enforce IAM controls and disable legacy ACLs
+  uniform_bucket_level_access = true
+  public_access_prevention = "enforced"
+
+  versioning {
+    enabled = true
+  }
+}
+
 resource "google_service_account" "thanos_sa" {
   account_id   = "thanos-writer"
   display_name = "Thanos Metrics Writer"
@@ -200,5 +214,5 @@ resource "google_storage_bucket_iam_member" "thanos_bucket_admin" {
 resource "google_service_account_iam_member" "workload_identity_binding" {
   service_account_id = google_service_account.thanos_sa.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:project-0-devops.svc.id.goog[platform-monitoring/thanos]"
+  member             = "serviceAccount:project-0-devops.svc.id.goog[platform-monitoring/thanos-writer]"
 }

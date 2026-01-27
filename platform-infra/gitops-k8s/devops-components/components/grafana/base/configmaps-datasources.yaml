@@ -1,0 +1,33 @@
+---
+# Source: kube-prometheus-stack/templates/grafana/configmaps-datasources.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-prometheus-stack-grafana-datasource
+  namespace: platform-monitoring
+  labels:
+    grafana_datasource: "1"
+    app: kube-prometheus-stack-grafana
+
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/version: "80.6.0"
+    app.kubernetes.io/part-of: kube-prometheus-stack
+    chart: kube-prometheus-stack-80.6.0
+    release: "kube-prometheus-stack"
+    heritage: "Helm"
+data:
+  datasource.yaml: |-
+    apiVersion: 1
+    datasources:
+    - name: Thanos
+      type: prometheus
+      access: proxy
+      # Point to the Thanos Querier Service in the same namespace
+      url: http://thanos-query:9090
+      isDefault: true
+      jsonData:
+        # Optimization: Thanos handles large time ranges, so we can increase the timeout
+        timeInterval: "15s"
+        queryTimeout: "60s"
+        httpMethod: "POST" # Better for large queries

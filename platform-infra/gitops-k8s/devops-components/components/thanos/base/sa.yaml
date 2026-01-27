@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: thanos
+  namespace: monitoring
+  annotations:
+    iam.gke.io/gcp-service-account: "thanos-writer@devops-project-id.iam.gserviceaccount.com"

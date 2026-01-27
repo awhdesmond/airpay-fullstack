@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: appset-ambient-mesh
+  name: appset-devops-monitoring
   namespace: platform-argocd
 spec:
   generators:
@@ -9,26 +9,21 @@ spec:
         elements:
           - cluster: devops
             url: https://kubernetes.default.svc
-    - clusters:
-        selector:
-          matchLabels:
-            env: prod
   template:
     metadata:
-      name: 'app-ambient-mesh-{{ name }}'
+      name: 'app-devops-monitoring-{{ name }}'
     spec:
       project: default
       source:
         repoURL: https://github.com/airpay/infrastructure.git
         targetRevision: HEAD
-        path: gitops-k8s/platform-components/setups/06-ambient-mesh/prod
+        path: gitops-k8s/devops-components/setups/03-monitoring/prod
       destination:
         server: '{{server}}' # The API URL of the remote cluster
-        namespace: platform-ambient-mesh
+        namespace: platform-devops-monitoring
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
-          - ServerSideApply=true

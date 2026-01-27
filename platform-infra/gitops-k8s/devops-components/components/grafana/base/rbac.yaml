@@ -1,0 +1,47 @@
+---
+# Source: kube-prometheus-stack/charts/grafana/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+automountServiceAccountToken: true
+metadata:
+  labels:
+    helm.sh/chart: grafana-10.4.0
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/version: "12.3.0"
+  name: kube-prometheus-stack-grafana
+  namespace: platform-monitoring
+---
+# Source: kube-prometheus-stack/charts/grafana/templates/clusterrole.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    helm.sh/chart: grafana-10.4.0
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/version: "12.3.0"
+  name: kube-prometheus-stack-grafana-clusterrole
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "watch", "list"]
+---
+# Source: kube-prometheus-stack/charts/grafana/templates/clusterrolebinding.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kube-prometheus-stack-grafana-clusterrolebinding
+  labels:
+    helm.sh/chart: grafana-10.4.0
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/version: "12.3.0"
+subjects:
+  - kind: ServiceAccount
+    name: kube-prometheus-stack-grafana
+    namespace: platform-monitoring
+roleRef:
+  kind: ClusterRole
+  name: kube-prometheus-stack-grafana-clusterrole
+  apiGroup: rbac.authorization.k8s.io

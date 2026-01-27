@@ -21,7 +21,7 @@ spec:
       source:
         repoURL: https://github.com/airpay/infrastructure.git
         targetRevision: HEAD
-        path: gitops-k8s/platform/setups/04-gateways/prod
+        path: gitops-k8s/platform-components/setups/04-gateways/prod
       destination:
         server: '{{server}}' # The API URL of the remote cluster
         namespace: platform-gateways

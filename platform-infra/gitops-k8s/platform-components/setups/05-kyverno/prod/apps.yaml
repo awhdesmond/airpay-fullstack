@@ -23,7 +23,7 @@ spec:
       source:
         repoURL: https://github.com/airpay/infrastructure.git
         targetRevision: HEAD
-        path: gitops-k8s/platform/setups/05-kyverno/prod
+        path: gitops-k8s/platform-components/setups/05-kyverno/prod
       destination:
         server: '{{server}}' # The API URL of the remote cluster
         namespace: platform-kyverno
