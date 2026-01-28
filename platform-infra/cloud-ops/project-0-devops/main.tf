@@ -90,18 +90,6 @@ module "gke_cluster_default" {
   node_pool_network_tags = ["gke-nodes-${local.gke_cluster_name}"]
 }
 
-resource "google_project_iam_audit_config" "gke_audit_logs" {
-  project = var.project_id
-  service = "container.googleapis.com" # The GKE API
-
-  audit_log_config {
-    log_type = "DATA_WRITE" # Captures create/update/delete of data
-  }
-
-  audit_log_config {
-    log_type = "DATA_READ"  # Captures get/list/watch of data
-  }
-}
 
 # ---------------------------------------------------------------------------------------------------------------------
 # 4. Atlantis

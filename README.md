@@ -35,7 +35,7 @@ Design the infrastructure architecture for a real-time payment processing system
 | Security (Container Images)                     | Artifact Registry vulnerability scan (Clair) + Distroless Base Images + SBOMs (trivy)                                                                                                        |
 | Security (Pod Runtime)                          | Pod security standards (PSS) + Pod security adminssion (PSA) + Security context, Linux capabilities + SeccompProfile                                                                         |
 | Security (DDOS, Rate-limiting, IP Whitelisting) | GCP Cloud Armor (DDOS + WAF rules)                                                                                                                                                           |
-| Security (Day 2 Operations)                     | OS Image Patching (Packer), Vulnerability Scans using Wiz to mitigate CVEs.                                                                                                                  |
+| Security (Day 2 Operations)                     | OS Image Patching (Packer), Vulnerability Scans using Wiz to mitigate CVEs. Read/Write Audit logs.                                                                                                                  |
 | Security (Business Continuity)                  | DB backups across projects with lockdown permissions                                                                                                                                         |
 
 View repo site at https://awhdesmond.github.io/airpay-fullstack/
