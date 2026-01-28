@@ -40,3 +40,13 @@ Design the infrastructure architecture for a real-time payment processing system
 
 View repo site at https://awhdesmond.github.io/airpay-fullstack/
 
+
+# Directory Structure
+
+* `payments-api` - Golang application to simulate a double entry ledger payment service
+* `payments-app-gitops-k8s` - GitOps repository for `payments-api`
+* `platform-infra` -  Main infrastructure repository
+* `platform-infra/cloud-ops` -  Main terraform directory, containing the configuration for modules and GCP projects.
+* `platform-infra/gitops-k8s/devops-components` - Main GitOps directory for centralised devops components.
+* `platform-infra/gitops-k8s/platform-components` - Main GitOps directory for platform components to be deployed in GKE clusters.
+* `platform-infra/db-ops` - Main Ansible directory for running database operations.
