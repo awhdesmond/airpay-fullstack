@@ -87,7 +87,6 @@ variable "autoscaling_resource_limits_mem_max" {
 }
 
 
-
 # ---------------------------------------------------------------------------------------------------------------------
 # Node Pools
 # ---------------------------------------------------------------------------------------------------------------------
@@ -118,3 +117,14 @@ variable "node_pool_network_tags" {
   description = "Primary nodepool node's network tags"
   default     = ["gke-nodes"]
 }
+
+# ---------------------------------------------------------------------------------------------------------------------
+# IAM
+# ---------------------------------------------------------------------------------------------------------------------
+
+variable "dev_team_groups" {
+  type = list(string)
+  default = [ "group:dev-team@airpay.com" ]
+  description = "List of dev teams to grant cluster viewer access"
+}
+

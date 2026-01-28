@@ -1,0 +1,13 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dev-team-access
+subjects:
+- kind: Group
+  name: dev-team@airpay.com # The Google Group email
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin # Binds to the built-in "Super User" role
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-secrets-store
+  namespace: platform-argocd
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            env: prod
+  template:
+    metadata:
+      name: 'app-rbac-{{ name }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/airpay/infrastructure.git
+        targetRevision: HEAD
+        path: gitops-k8s/platform-components/setups/01-rbac/prod
+      destination:
+        server: '{{server}}' # The API URL of the remote cluster
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

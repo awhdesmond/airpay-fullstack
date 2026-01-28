@@ -7,6 +7,10 @@ terraform {
   }
 }
 
+provider "googleworkspace" {
+  customer_id = var.customer_id
+}
+
 provider "google" {
   project     = var.project_id
 }

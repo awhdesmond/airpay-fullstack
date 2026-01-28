@@ -79,6 +79,9 @@ resource "google_container_cluster" "primary" {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 
+  authenticator_groups_config {
+    security_group = "gke-security-groups@airpay.com"
+  }
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -157,3 +160,24 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 }
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 4. NODE POOL
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Grant the group permission to fetch credentials for BOTH clusters
+resource "google_project_iam_member" "dev_team_cluster_viewer" {
+  for_each = var.dev_team_groups
+
+  project = var.project_id
+  role    = "roles/container.clusterViewer"
+  member  = each.value
+}
+
+# (Optional) Allow them to view logs/metrics
+resource "google_project_iam_member" "dev_team_logging" {
+  for_each = var.dev_team_groups
+
+  project = var.project_id
+  role    = "roles/logging.viewer"
+  member  = each.value
+}
