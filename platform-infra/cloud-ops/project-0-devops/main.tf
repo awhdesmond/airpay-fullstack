@@ -90,6 +90,28 @@ module "gke_cluster_default" {
   node_pool_network_tags = ["gke-nodes-${local.gke_cluster_name}"]
 }
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 3.1 Bastion Host
+# ---------------------------------------------------------------------------------------------------------------------
+
+module "bastion_a" {
+  source = "../modules/gcp/bastion"
+  instance_name = "bastion-australia-southeast1a"
+  availability_zone = "australia-southeast1a"
+  vpc_name = local.vpc_name
+  vpc_id = module.vpc.vpc_id
+  subnet_id = module.gke_subnet.subnet_id
+}
+
+module "bastion_b" {
+  source = "../modules/gcp/bastion"
+  instance_name = "bastion-australia-southeast1b"
+  availability_zone = "australia-southeast1b"
+  vpc_name = local.vpc_name
+  vpc_id = module.vpc.vpc_id
+  subnet_id = module.gke_subnet.subnet_id
+}
+
 
 # ---------------------------------------------------------------------------------------------------------------------
 # 4. Atlantis
@@ -283,3 +305,6 @@ resource "google_secret_manager_secret_version" "ansible_key_version" {
   secret      = google_secret_manager_secret.ansible_key_secret.id
   secret_data = tls_private_key.ansible_ssh_key.private_key_pem
 }
+
+
+
