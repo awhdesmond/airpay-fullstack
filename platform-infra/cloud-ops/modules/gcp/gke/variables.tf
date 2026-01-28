@@ -24,6 +24,13 @@ variable "location" {
 # Networking
 # ---------------------------------------------------------------------------------------------------------------------
 
+variable "master_ipv4_cidr_block" {
+  type        = string
+  nullable    = false
+  default     = "172.16.0.0/28"
+  description = "VPC ID"
+}
+
 variable "vpc_id" {
   type        = string
   nullable    = false
@@ -52,30 +59,30 @@ variable "subnet_service_ip_cidr_name" {
 # Autoscaling
 # ---------------------------------------------------------------------------------------------------------------------
 variable "autoscaling_resource_limits_cpu_min" {
-  type = number
-  nullable = true
-  default = 1
+  type        = number
+  nullable    = true
+  default     = 1
   description = "Autoscaling resouce limits cpu min"
 }
 
 variable "autoscaling_resource_limits_cpu_max" {
-  type = number
-  nullable = true
-  default = 1024
+  type        = number
+  nullable    = true
+  default     = 1024
   description = "Autoscaling resouce limits cpu max"
 }
 
 variable "autoscaling_resource_limits_mem_min" {
-  type = number
-  nullable = true
-  default = 1
+  type        = number
+  nullable    = true
+  default     = 1
   description = "Autoscaling resouce limits mem min"
 }
 
 variable "autoscaling_resource_limits_mem_max" {
-  type = number
-  nullable = true
-  default = 2048
+  type        = number
+  nullable    = true
+  default     = 2048
   description = "Autoscaling resouce limits mem max"
 }
 
@@ -109,5 +116,5 @@ variable "node_pool_network_tags" {
   type        = list(string)
   nullable    = false
   description = "Primary nodepool node's network tags"
-  default     = [ "gke-nodes" ]
+  default     = ["gke-nodes"]
 }

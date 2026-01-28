@@ -76,6 +76,7 @@ module "gke_cluster_default" {
 
   primary_node_pool_name = "node-pool-primary"
   node_pool_network_tags = ["gke-nodes-${local.gke_cluster_name}"]
+  master_ipv4_cidr_block = "172.16.0.0/28"
 }
 
 

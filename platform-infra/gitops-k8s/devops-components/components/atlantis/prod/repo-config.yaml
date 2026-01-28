@@ -11,26 +11,26 @@ dev-workflow:
     steps:
       - env:
           name: GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
-          value: "atlantis-deployer-dev@DEVOPS-PROJECT-ID.iam.gserviceaccount.com"
+          value: "atlantis-deployer-dev@project-0-devops.iam.gserviceaccount.com"
       - init
       - plan
   apply:
     steps:
       - env:
           name: GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
-          value: "atlantis-deployer-dev@DEVOPS-PROJECT-ID.iam.gserviceaccount.com"
+          value: "atlantis-deployer-dev@project-0-devops.iam.gserviceaccount.com"
       - apply
 prod-workflow:
   plan:
     steps:
       - env:
           name: GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
-          value: "atlantis-deployer-prod@DEVOPS-PROJECT-ID.iam.gserviceaccount.com"
+          value: "atlantis-deployer-prod@project-0-devops.iam.gserviceaccount.com"
       - init
       - plan
   apply:
     steps:
       - env:
           name: GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
-          value: "atlantis-deployer-prod@DEVOPS-PROJECT-ID.iam.gserviceaccount.com"
+          value: "atlantis-deployer-prod@project-0-devops.iam.gserviceaccount.com"
       - apply

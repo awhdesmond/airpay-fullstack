@@ -27,6 +27,11 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           privileged: false
+          capabilities:
+              drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
         resources:
           requests:
             cpu: "100m"

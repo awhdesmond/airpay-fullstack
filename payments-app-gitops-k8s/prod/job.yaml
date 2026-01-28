@@ -6,7 +6,7 @@ metadata:
 spec:
   template:
     spec:
-      serviceAccountName: api
+      serviceAccountName: payments
       containers:
       - name: flyway
         volumeMounts:

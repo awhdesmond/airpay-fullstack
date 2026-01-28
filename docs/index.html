@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airpay Architecture Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: Slate & Indigo - Professional, clean, high contrast for data. -->
+    <!-- Application Structure Plan:
+         1. Executive Dashboard: High-level metrics (SLO, Error Budget) to set the context of reliability.
+         2. Infrastructure Topology: Text-based detailed breakdown of Hub-and-Spoke, Isolation, Network Strategy, and Architectural Patterns.
+         3. The Hub: Detailed breakdown of Centralized Ops (ArgoCD, Atlantis, Thanos).
+         4. Platform Stack: A component explorer + Application Reliability Standards details.
+         5. Data & DR Simulation: Interactive simulation + Detailed DB Topology description.
+         6. Roadmap: A visual summary of future work.
+    -->
+    <!-- Visualization & Content Choices:
+         - SLO Gauges: Visual KPI cards.
+         - DR Simulation: DOM manipulation + CSS transitions.
+         - Stack Explorer: Filterable Grid.
+         - Content: Expanded text blocks derived from source architecture document.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Animation Classes for DR Simulation */
+        .node-box { transition: all 0.5s ease; }
+        .connection-line { transition: all 0.5s ease; height: 2px; background-color: #cbd5e1; }
+        .active-connection { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+        .failover-connection { background-color: #f59e0b; }
+        .offline { opacity: 0.5; filter: grayscale(100%); }
+        .promoted { border-color: #10b981 !important; background-color: #ecfdf5 !important; }
+
+        .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; font-weight: 600; }
+        .tab-inactive { color: #64748b; }
+        .tab-inactive:hover { color: #334155; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 pb-12">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <span class="text-indigo-600 text-xl font-bold">Airpay<span class="text-slate-500 font-light">Architect</span></span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8" id="desktop-nav">
+                        <!-- Nav items injected by JS -->
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            Status: Draft
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu placeholder -->
+        <div class="sm:hidden hidden bg-white border-t" id="mobile-menu">
+            <div class="pt-2 pb-4 space-y-1 px-4" id="mobile-nav-items"></div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+        <!-- SECTION 1: Executive Dashboard -->
+        <section id="executive" class="scroll-mt-20">
+            <div class="text-center mb-10">
+                <h1 class="text-4xl font-bold text-slate-900 tracking-tight">System Architecture Overview</h1>
+                <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">
+                    A high-reliability, secure, and scalable cloud-native platform on GCP.
+                    Designed for <strong>99.99% availability</strong> using a Hub-and-Spoke topology and rigorous SRE practices.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- KPI Cards -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <h3 class="text-sm font-medium text-slate-500">Availability Target</h3>
+                    <div class="mt-2 flex items-baseline">
+                        <span class="text-3xl font-bold text-indigo-600">99.99%</span>
+                        <span class="ml-2 text-sm text-slate-500">Four Nines</span>
+                    </div>
+                    <div class="mt-4 w-full bg-slate-200 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full" style="width: 99.99%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <h3 class="text-sm font-medium text-slate-500">Monthly Error Budget</h3>
+                    <div class="mt-2 flex items-baseline">
+                        <span class="text-3xl font-bold text-amber-600">~4.3m</span>
+                        <span class="ml-2 text-sm text-slate-500">per month</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400">~52m per year</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <h3 class="text-sm font-medium text-slate-500">RTO Target</h3>
+                    <div class="mt-2 flex items-baseline">
+                        <span class="text-3xl font-bold text-slate-700">&lt; 40m</span>
+                        <span class="ml-2 text-sm text-slate-500">Recovery Time</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400">Scale-up + DB Failover + DNS</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <h3 class="text-sm font-medium text-slate-500">RPO Target</h3>
+                    <div class="mt-2 flex items-baseline">
+                        <span class="text-3xl font-bold text-slate-700">&lt; 15m</span>
+                        <span class="ml-2 text-sm text-slate-500">Recovery Point</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400">Async Replication Lag</p>
+                </div>
+            </div>
+
+            <!-- Reliability Context -->
+            <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <span class="text-2xl">🛡️</span>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-indigo-800">Reliability Strategy</h3>
+                        <div class="mt-2 text-sm text-indigo-700">
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li><strong>Multi-AZ Active-Active:</strong> Serves traffic from multiple zones simultaneously for zero-downtime zonal maintenance. Load balancers automatically shift traffic away from unhealthy zones.</li>
+                                <li><strong>Multi-Region Active-Passive:</strong> "Pilot Light" strategy in failover region to survive catastrophic regional outages. Balances cost against recovery speed.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Infrastructure Topology -->
+        <section id="infrastructure" class="scroll-mt-20 border-t border-slate-200 pt-12">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-slate-900">Cloud Infrastructure Topology</h2>
+                <p class="mt-2 text-slate-600 max-w-4xl">
+                    We utilize a <strong>Hub-and-Spoke</strong> model to strictly segregate management concerns from business logic. This ensures that a compromise in a business application does not threaten the management plane.
+                </p>
+            </div>
+
+            <!-- Hub and Spoke Detailed Breakdown -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- The Hub -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 border-l-4 border-l-indigo-600">
+                    <div class="flex items-center mb-4">
+                        <span class="text-2xl mr-3">🏯</span>
+                        <h3 class="text-lg font-bold text-slate-900">The Hub: <span class="text-indigo-600 font-mono text-base">project-0-devops</span></h3>
+                    </div>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                        The "Command and Control" center. This project hosts centralized CI/CD pipelines, observability backends, and platform governance tools.
+                    </p>
+                    <ul class="text-sm text-slate-600 space-y-2">
+                        <li class="flex items-start"><span class="mr-2">🔹</span> Acts as the single source of truth for deployments.</li>
+                        <li class="flex items-start"><span class="mr-2">🔹</span> Prevents "config drift" across environments.</li>
+                        <li class="flex items-start"><span class="mr-2">🔹</span> Security policies are applied consistently from here.</li>
+                    </ul>
+                </div>
+
+                <!-- The Spokes -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500">
+                    <div class="flex items-center mb-4">
+                        <span class="text-2xl mr-3">🎡</span>
+                        <h3 class="text-lg font-bold text-slate-900">The Spokes: <span class="text-emerald-600 font-mono text-base">Strict Dev/Prod Isolation</span></h3>
+                    </div>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-4">
+                        Business domains are isolated into dedicated GCP projects per environment to limit the "blast radius" of security incidents.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div class="bg-emerald-50 p-3 rounded">
+                            <h4 class="font-bold text-emerald-800 text-xs uppercase mb-1">Dev Project</h4>
+                            <p class="text-xs text-emerald-700">Optimized for velocity. Looser security policies, lower resource quotas (Preemptible/Spot instances).</p>
+                        </div>
+                        <div class="bg-emerald-50 p-3 rounded">
+                            <h4 class="font-bold text-emerald-800 text-xs uppercase mb-1">Prod Project</h4>
+                            <p class="text-xs text-emerald-700">Optimized for stability. Strict IAM (Least Privilege), VPC Service Controls, high-performance compute.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architectural Resilience Patterns (NEW) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-2 flex items-center">
+                        <span class="mr-2">🚢</span> Bulkhead Pattern
+                    </h3>
+                    <p class="text-sm text-slate-600">
+                        Isolating projects for different business domains. If one domain is compromised or exhausted of resources, the "bulkhead" prevents the failure from cascading to other domains or the management hub.
+                    </p>
+                </div>
+                <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-2 flex items-center">
+                        <span class="mr-2">🧠</span> Control vs. Data Plane Separation
+                    </h3>
+                    <p class="text-sm text-slate-600">
+                        Ensuring that even if the management API (Control Plane) goes down, existing workloads (Data Plane) continue running without interruption. The spokes operate independently of the hub's availability.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Network Architecture Detail (UPDATED) -->
+            <div class="bg-slate-50 rounded-xl p-8 border border-slate-200">
+                <h3 class="text-xl font-bold text-slate-900 mb-6">Zero-Trust Network Architecture</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white p-5 rounded-lg shadow-sm">
+                        <div class="text-indigo-600 text-xl mb-3">🔗 VPC Peering</div>
+                        <p class="text-sm text-slate-600">
+                            Spoke VPCs connect to the Hub VPC via Peering. Allows DevOps tools (ArgoCD) to communicate with app clusters using private IPs. Management traffic never traverses the public internet.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-lg shadow-sm">
+                        <div class="text-indigo-600 text-xl mb-3">🚀 Egress Control</div>
+                        <p class="text-sm text-slate-600">
+                            Custom Highly-Available NAT Gateway clusters (GCE + NLB). Provides a <strong>unique static outgoing IP</strong> required for third-party vendor allowlisting (Banking APIs).
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Multi-Tier Defense (NEW) -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                    <div class="text-indigo-600 text-xl mb-4 font-bold">🛡️ Multi-Tier Defense Strategy</div>
+                    <p class="text-sm text-slate-600 mb-4">Origin servers are never exposed directly to the internet.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div class="bg-slate-50 p-3 rounded border border-slate-100">
+                            <div class="font-bold text-slate-800">Tier 1: Edge (CDN)</div>
+                            <p class="text-xs text-slate-500 mt-1">
+                                <strong>Anycast Routing:</strong> Shunts traffic to nearest PoP. Absorbs volumetric L3/L4 attacks (SYN floods). Caches static content.
+                            </p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded border border-slate-100">
+                            <div class="font-bold text-slate-800">Tier 2: Ingress</div>
+                            <p class="text-xs text-slate-500 mt-1">
+                                <strong>Public LBs & Gateways:</strong> Terminate TLS. Handle L7 routing. Enforce Cloud Armor WAF rules.
+                            </p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded border border-slate-100">
+                            <div class="font-bold text-slate-800">Tier 3: Compute</div>
+                            <p class="text-xs text-slate-500 mt-1">
+                                <strong>Private Subnets:</strong> App servers/DBs accept traffic <em>only</em> from Load Balancers via firewall rules.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: The Hub (New) -->
+        <section id="hub" class="scroll-mt-20 border-t border-slate-200 pt-12">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-slate-900">Centralized Operations (The Hub)</h2>
+                <p class="mt-2 text-slate-600 max-w-4xl">
+                    Hosted in <code>project-0-devops</code>, this environment hosts the shared services that power the platform. It enforces governance and provides visibility across all spokes.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- GitOps & CI/CD -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-indigo-50 px-6 py-4 border-b border-indigo-100 flex items-center">
+                        <span class="text-2xl mr-3">🚀</span>
+                        <h3 class="font-bold text-indigo-900">GitOps & Infrastructure-as-Code</h3>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div>
+                            <h4 class="font-bold text-slate-800 flex items-center">
+                                ArgoCD
+                                <span class="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Continuous Delivery</span>
+                            </h4>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Operates on a "pull model". We utilize <strong>ApplicationSets</strong> to federate platform components (e.g., security policies, logging agents) across all clusters. This ensures configuration consistency and eliminates drift.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 flex items-center">
+                                Atlantis
+                                <span class="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Terraform Automation</span>
+                            </h4>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Acts as an <strong>Identity Broker</strong>. Developers create PRs, and Atlantis impersonates specific service accounts (`atlantis-deployer`) to execute changes.
+                                <br><br>
+                                <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Security Benefit:</span> No human requires direct write access to Production.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observability -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-purple-50 px-6 py-4 border-b border-purple-100 flex items-center">
+                        <span class="text-2xl mr-3">🔭</span>
+                        <h3 class="font-bold text-purple-900">Centralized Observability</h3>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div>
+                            <h4 class="font-bold text-slate-800 flex items-center">
+                                Thanos
+                                <span class="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Metrics Aggregation</span>
+                            </h4>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Solves Prometheus scalability limits.
+                            </p>
+                            <ul class="list-disc list-inside text-sm text-slate-600 mt-2 space-y-1">
+                                <li><strong>Sidecar:</strong> Uploads metric blocks to GCS for unlimited retention.</li>
+                                <li><strong>Querier:</strong> Aggregates real-time and historical data for a global view.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 flex items-center">
+                                Grafana
+                                <span class="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Visualization</span>
+                            </h4>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Connected to Thanos Store Gateway. Provides a "Single Pane of Glass" for SREs to correlate incidents across regions and services.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: Platform & Compute -->
+        <section id="platform" class="scroll-mt-20 border-t border-slate-200 pt-12">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">Compute Layer & Platform Components</h2>
+                <p class="mt-2 text-slate-600">
+                    We leverage <strong>Regional GKE Clusters</strong> to survive zonal failures. The control plane is replicated across three zones.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Cluster Configuration -->
+                <div class="lg:col-span-1 space-y-4">
+                    <h3 class="font-bold text-slate-800 border-b border-slate-200 pb-2">Cluster Configuration</h3>
+
+                    <div class="bg-white p-4 rounded border border-slate-200">
+                        <h4 class="text-sm font-bold text-slate-900">Node Security</h4>
+                        <p class="text-xs text-slate-600 mt-1">
+                            <strong>Private Nodes:</strong> No public IPs.
+                            <br><strong>OS:</strong> `COS_CONTAINERD` (Container-Optimized OS) - minimal attack surface, read-only root.
+                            <br><strong>Access:</strong> Control plane access via Identity-Aware Proxy (IAP).
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded border border-slate-200">
+                        <h4 class="text-sm font-bold text-slate-900">Networking</h4>
+                        <p class="text-xs text-slate-600 mt-1">
+                            <strong>VPC-Native:</strong> Uses Dataplane V2 (Cilium/eBPF) for high performance and deep visibility. Bypasses legacy iptables.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded border border-slate-200">
+                        <h4 class="text-sm font-bold text-slate-900">Multi-Region Strategy</h4>
+                        <p class="text-xs text-slate-600 mt-1">
+                            <strong>Primary:</strong> HPA + Cluster Autoscaler.
+                            <br><strong>Failover:</strong> "Pilot Light" (0 nodes default). Retains config/secrets, scales up only during DR.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Platform Stack -->
+                <div class="lg:col-span-2">
+                     <h3 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4">Internal Developer Platform (IDP) Components</h3>
+                     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="flex border-b border-slate-100 overflow-x-auto" id="stack-filters">
+                            <button class="px-6 py-4 text-sm font-medium focus:outline-none tab-active" onclick="filterStack('all', this)">All Components</button>
+                            <button class="px-6 py-4 text-sm font-medium focus:outline-none tab-inactive" onclick="filterStack('traffic', this)">Traffic</button>
+                            <button class="px-6 py-4 text-sm font-medium focus:outline-none tab-inactive" onclick="filterStack('security', this)">Security</button>
+                            <button class="px-6 py-4 text-sm font-medium focus:outline-none tab-inactive" onclick="filterStack('ops', this)">Ops</button>
+                        </div>
+
+                        <div class="p-6 bg-slate-50 min-h-[350px]">
+                            <div id="stack-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Cards injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Standards -->
+            <div class="bg-indigo-50 rounded-xl p-6 border border-indigo-100">
+                <div class="flex items-center mb-4">
+                     <span class="text-2xl mr-3">📜</span>
+                     <div>
+                        <h3 class="text-lg font-bold text-indigo-900">The "Airpay Reliability Contract"</h3>
+                        <p class="text-xs text-indigo-700 font-medium uppercase tracking-wide">Mandatory Standards for Application Pods</p>
+                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Scaling -->
+                    <div class="bg-white/60 p-4 rounded-lg border border-indigo-100">
+                        <h4 class="font-bold text-indigo-800 text-sm mb-2 flex items-center">
+                            <span class="mr-2">📈</span> Graceful Scaling
+                        </h4>
+                        <ul class="text-xs text-indigo-900 space-y-2 list-disc pl-4">
+                            <li><strong>KEDA Integration:</strong> Must expose application-level metrics (e.g., active requests per pod) for multi-dimensional scaling beyond just CPU/RAM.</li>
+                            <li><strong>Disruption Budgets:</strong> Define `PodDisruptionBudgets` (PDBs) to ensure minimum availability during node upgrades.</li>
+                            <li><strong>VPA:</strong> Vertical Pod Autoscaler enabled for right-sizing resource requests over time.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Resilience -->
+                    <div class="bg-white/60 p-4 rounded-lg border border-indigo-100">
+                        <h4 class="font-bold text-indigo-800 text-sm mb-2 flex items-center">
+                            <span class="mr-2">🧱</span> Resilience & QoS
+                        </h4>
+                        <ul class="text-xs text-indigo-900 space-y-2 list-disc pl-4">
+                            <li><strong>Topology Spreading:</strong> Hard constraints to distribute pods across AZs.</li>
+                            <li><strong>Anti-Affinity:</strong> `PodAntiAffinity` to spread replicas across distinct nodes.</li>
+                            <li><strong>Guaranteed QoS:</strong> Requests must equal Limits to prevent OOM kills and ensure performance.</li>
+                            <li><strong>Probes:</strong> Tuned Liveness (restart if dead) and Readiness (traffic cut if overloaded).</li>
+                        </ul>
+                    </div>
+
+                    <!-- Security -->
+                    <div class="bg-white/60 p-4 rounded-lg border border-indigo-100">
+                        <h4 class="font-bold text-indigo-800 text-sm mb-2 flex items-center">
+                            <span class="mr-2">🔒</span> Security Context
+                        </h4>
+                        <ul class="text-xs text-indigo-900 space-y-2 list-disc pl-4">
+                            <li><strong>Distroless:</strong> Minimal images (no shell/package managers).</li>
+                            <li><strong>Hardening:</strong> Non-root user, default `seccomp` profile, drop all Linux capabilities, prevent privilege escalation.</li>
+                            <li><strong>Identity:</strong> Workload Identity for cloud access (no static keys).</li>
+                            <li><strong>Scanning:</strong> Automated vulnerability scanning in GCR.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: Data & DR -->
+        <section id="data-dr" class="scroll-mt-20 border-t border-slate-200 pt-12">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div class="max-w-3xl">
+                    <h2 class="text-2xl font-bold text-slate-900">Data Persistence & Disaster Recovery</h2>
+                    <p class="mt-2 text-slate-600">
+                        Self-managed PostgreSQL on Compute Engine using <strong>Patroni</strong> (HA) and <strong>etcd</strong> (Consensus).
+                        We chose this over Cloud SQL for maximum control over performance tuning and failover behavior.
+                    </p>
+                </div>
+                <button id="dr-trigger-btn" class="mt-4 md:mt-0 px-6 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow transition-colors font-medium flex items-center">
+                    <span class="mr-2">⚠️</span> Simulate Disaster
+                </button>
+            </div>
+
+            <!-- DB Details Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 text-sm">
+                <div class="bg-white p-4 border border-slate-200 rounded-lg">
+                    <div class="font-bold text-slate-800 mb-1">Primary Node</div>
+                    <div class="text-slate-500">1x Write Node (Main Region). Handles all write traffic.</div>
+                </div>
+                <div class="bg-white p-4 border border-slate-200 rounded-lg">
+                    <div class="font-bold text-slate-800 mb-1">Sync Replicas (RPO=0)</div>
+                    <div class="text-slate-500">2x Read Nodes (Main Region, diff AZs). Synchronous replication ensures Zero Data Loss.</div>
+                </div>
+                <div class="bg-white p-4 border border-slate-200 rounded-lg">
+                    <div class="font-bold text-slate-800 mb-1">Async Replica (DR)</div>
+                    <div class="text-slate-500">1x DR Node (Failover Region). Asynchronous to avoid latency penalties. Seed for DR cluster.</div>
+                </div>
+                <div class="bg-white p-4 border border-slate-200 rounded-lg border-l-4 border-l-amber-400">
+                    <div class="font-bold text-slate-800 mb-1">Backup Replica</div>
+                    <div class="text-slate-500">1x Dedicated Node. Automated Cloud Runner job triggers <strong>disk snapshots every 15 mins</strong>.</div>
+                </div>
+            </div>
+
+            <!-- Custom Interactive DR Diagram -->
+            <div class="bg-slate-900 rounded-xl p-8 relative shadow-lg border border-slate-700">
+
+                <!-- Diagram Container -->
+                <div class="relative z-10 flex flex-col md:flex-row justify-between items-center h-[500px] md:h-[450px]">
+
+                    <!-- Primary Region -->
+                    <div class="relative w-full md:w-5/12 h-full border-2 border-dashed border-slate-600 rounded-xl p-4 flex flex-col items-center justify-center transition-all duration-500" id="region-primary">
+                        <div class="absolute top-2 left-2 text-xs text-slate-400 font-mono">PRIMARY REGION (Active)</div>
+
+                        <!-- App Layer -->
+                        <div class="mb-8 w-32 bg-indigo-600 text-white py-2 px-4 rounded text-center text-sm font-bold shadow-lg z-20" id="app-primary">
+                            App Traffic
+                        </div>
+
+                        <!-- DB Cluster -->
+                        <div class="flex space-x-4">
+                            <div class="node-box w-20 h-20 bg-emerald-500 rounded-lg flex flex-col items-center justify-center text-white shadow-lg border-2 border-white z-20" id="db-primary">
+                                <span class="text-2xl">🛢️</span>
+                                <span class="text-xs font-bold mt-1">Primary</span>
+                            </div>
+                            <div class="node-box w-20 h-20 bg-slate-700 rounded-lg flex flex-col items-center justify-center text-white shadow opacity-80 z-20" id="db-sync1">
+                                <span class="text-xs">Replica</span>
+                                <span class="text-[10px] mt-1 text-emerald-300">Sync</span>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs text-slate-400">Synchronous Rep (RPO=0)</div>
+                    </div>
+
+                    <!-- Connection Lines -->
+                    <div class="hidden md:flex w-2/12 h-full items-center justify-center relative">
+                        <!-- Normal Replication -->
+                        <div class="w-full h-1 bg-slate-600 relative overflow-hidden" id="rep-line">
+                            <div class="absolute top-0 left-0 h-full w-1/3 bg-blue-400 opacity-50 animate-pulse"></div>
+                        </div>
+                        <div class="absolute -top-6 text-xs text-slate-400">Async Rep</div>
+                    </div>
+
+                    <!-- Failover Region -->
+                    <div class="relative w-full md:w-5/12 h-full border-2 border-dashed border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center bg-slate-800/50" id="region-failover">
+                        <div class="absolute top-2 left-2 text-xs text-slate-500 font-mono">FAILOVER REGION (Pilot Light)</div>
+
+                        <!-- App Layer (Hidden initially) -->
+                        <div class="mb-8 w-32 bg-slate-600 text-slate-300 py-2 px-4 rounded text-center text-sm font-bold shadow opacity-50 transition-all duration-500 z-20" id="app-failover">
+                            Scale: 0
+                        </div>
+
+                        <!-- DB Cluster -->
+                        <div class="node-box w-20 h-20 bg-slate-700 rounded-lg flex flex-col items-center justify-center text-white shadow border-2 border-slate-500 z-20" id="db-async">
+                            <span class="text-2xl">⏳</span>
+                            <span class="text-xs font-bold mt-1">Async</span>
+                        </div>
+                        <div class="mt-2 text-xs text-slate-500" id="dr-status-text">Standby Mode</div>
+                    </div>
+
+                </div>
+
+                <!-- Status Log Overlay (MOVED BELOW) -->
+                <div class="mt-8 bg-black/40 backdrop-blur rounded p-4 text-xs font-mono text-green-400 border border-slate-700 h-32 overflow-y-auto" id="dr-log">
+                    > System Normal. Primary region handling traffic.<br>
+                    > Synchronous replication active within Primary Region.<br>
+                    > Asynchronous replication active to Failover Region.
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                 <div class="p-4 bg-white rounded border border-slate-200">
+                     <div class="text-2xl font-bold text-slate-800">1. Infra Scale-Up</div>
+                     <p class="text-sm text-slate-500">Terraform scales Pilot Light nodes 0 -> N</p>
+                 </div>
+                 <div class="p-4 bg-white rounded border border-slate-200">
+                     <div class="text-2xl font-bold text-slate-800">2. DB Failover</div>
+                     <p class="text-sm text-slate-500">Patroni promotes Async Replica to Primary</p>
+                 </div>
+                 <div class="p-4 bg-white rounded border border-slate-200">
+                     <div class="text-2xl font-bold text-slate-800">3. Traffic Switch</div>
+                     <p class="text-sm text-slate-500">Update DNS/CDN to Failover LB</p>
+                 </div>
+            </div>
+        </section>
+
+        <!-- SECTION 6: Roadmap -->
+        <section id="roadmap" class="scroll-mt-20 border-t border-slate-200 pt-12">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Strategic Roadmap</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- High Priority -->
+                <div class="bg-red-50 rounded-xl p-4 border border-red-100">
+                    <h3 class="font-bold text-red-800 mb-4 flex items-center">
+                        <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>High Priority
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="bg-white p-3 rounded shadow-sm border border-red-100">
+                            <div class="font-semibold text-slate-800">Automated Patching</div>
+                            <p class="text-xs text-slate-500 mt-1">Immutable infra pipelines for DBs & NATs to ensure security compliance without manual toil.</p>
+                        </div>
+                        <div class="bg-white p-3 rounded shadow-sm border border-red-100">
+                            <div class="font-semibold text-slate-800">Synthetic Monitoring</div>
+                            <p class="text-xs text-slate-500 mt-1">Canary probes for $1.00 transactions to verify full payment flow and catch "silent" failures.</p>
+                        </div>
+                        <!-- NEW ITEM MOVED HERE -->
+                        <div class="bg-white p-3 rounded shadow-sm border border-red-100">
+                            <div class="font-semibold text-slate-800">Bastion Host</div>
+                            <p class="text-xs text-slate-500 mt-1">IAP-aware proxy for secure access to private endpoints.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medium Priority -->
+                <div class="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                    <h3 class="font-bold text-amber-800 mb-4 flex items-center">
+                        <span class="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>Medium Priority
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="bg-white p-3 rounded shadow-sm border border-amber-100">
+                            <div class="font-semibold text-slate-800">Redis Caching</div>
+                            <p class="text-xs text-slate-500 mt-1">Write-through for idempotency keys to offload read pressure from primary DB.</p>
+                        </div>
+                        <div class="bg-white p-3 rounded shadow-sm border border-amber-100">
+                            <div class="font-semibold text-slate-800">Security Hardening</div>
+                            <p class="text-xs text-slate-500 mt-1">SBOMs, Binary Auth, Google Groups IAM integration for easier offboarding.</p>
+                        </div>
+                        <!-- NEW ITEM -->
+                        <div class="bg-white p-3 rounded shadow-sm border border-amber-100">
+                            <div class="font-semibold text-slate-800">DB Backup Lockdown</div>
+                            <p class="text-xs text-slate-500 mt-1">Cross-project backups with strict permission boundaries.</p>
+                        </div>
+                        <!-- NEW ITEM -->
+                        <div class="bg-white p-3 rounded shadow-sm border border-amber-100">
+                            <div class="font-semibold text-slate-800">Distributed Tracing</div>
+                            <p class="text-xs text-slate-500 mt-1">Implement observability for full request lifecycles.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Low Priority -->
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <h3 class="font-bold text-blue-800 mb-4 flex items-center">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>Low Priority
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="bg-white p-3 rounded shadow-sm border border-blue-100">
+                            <div class="font-semibold text-slate-800">Cost Optimization</div>
+                            <p class="text-xs text-slate-500 mt-1">Refine resource quotas & LimitRanges for better bin-packing.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Navigation ---
+        const sections = [
+            { id: 'executive', label: 'Executive' },
+            { id: 'infrastructure', label: 'Infrastructure' },
+            { id: 'hub', label: 'The Hub' },
+            { id: 'platform', label: 'Platform Stack' },
+            { id: 'data-dr', label: 'Data & DR' },
+            { id: 'roadmap', label: 'Roadmap' }
+        ];
+
+        const navContainer = document.getElementById('desktop-nav');
+        const mobileNavContainer = document.getElementById('mobile-nav-items');
+
+        sections.forEach(sec => {
+            // Desktop
+            const link = document.createElement('a');
+            link.href = `#${sec.id}`;
+            link.className = "border-transparent text-slate-500 hover:border-indigo-500 hover:text-slate-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors";
+            link.innerText = sec.label;
+            navContainer.appendChild(link);
+
+            // Mobile
+            const mLink = document.createElement('a');
+            mLink.href = `#${sec.id}`;
+            mLink.className = "block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800";
+            mLink.innerText = sec.label;
+            mobileNavContainer.appendChild(mLink);
+        });
+
+        // --- Platform Stack Explorer ---
+        const stackData = [
+            { id: 1, title: 'Kgateway', category: 'traffic', icon: '🚦', desc: 'Unified API Gateway (Envoy). Handles complex North/South traffic routing, traffic splitting, and auth offload.' },
+            { id: 2, title: 'Cloud Armor', category: 'traffic', icon: '🛡️', desc: 'L7 External LB + WAF. Edge protection against DDoS (OWASP Top 10) before traffic reaches clusters.' },
+            { id: 3, title: 'Cert-Manager', category: 'security', icon: '📜', desc: 'Automated TLS lifecycle management via DigiCert. Ensures no certificate ever expires unnoticed.' },
+            { id: 4, title: 'Secrets Store CSI', category: 'security', icon: '🔑', desc: 'Mounts secrets to RAM volume. Prevents secrets from being written to disk or exposed as env vars.' },
+            { id: 5, title: 'Kyverno', category: 'security', icon: '👮', desc: 'Policy-as-Code admission controller. Enforces PSS, blocks root containers, auto-generates NetPol.' },
+            { id: 6, title: 'Ambient Mesh', category: 'security', icon: '🕸️', desc: 'Sidecar-less mTLS (Zero Trust) and L4 observability via ztunnel, reducing sidecar overhead.' },
+            { id: 7, title: 'KEDA', category: 'ops', icon: '📈', desc: 'Event-driven autoscaling. Scales proactively based on business metrics (e.g., HTTP queue depth) vs CPU.' },
+            { id: 8, title: 'OTel Collector', category: 'ops', icon: '📡', desc: 'Vendor-agnostic telemetry agent. Scrapes metrics, enriches metadata, and forwards to Thanos.' },
+            { id: 9, title: 'Kube-state-metrics', category: 'ops', icon: '📊', desc: 'Generates metrics about state of objects (Pod restarts, Node condition) for cluster health visibility.' }
+        ];
+
+        function renderStack(filter) {
+            const grid = document.getElementById('stack-grid');
+            grid.innerHTML = '';
+
+            const filtered = filter === 'all' ? stackData : stackData.filter(item => item.category === filter);
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:border-indigo-300 transition-colors";
+                card.innerHTML = `
+                    <div class="flex items-center mb-2">
+                        <span class="text-xl mr-2">${item.icon}</span>
+                        <h4 class="font-bold text-slate-800">${item.title}</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">${item.desc}</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterStack(category, btn) {
+            renderStack(category);
+            // Update buttons
+            const buttons = document.getElementById('stack-filters').querySelectorAll('button');
+            buttons.forEach(b => {
+                b.className = "px-6 py-4 text-sm font-medium focus:outline-none tab-inactive";
+            });
+            btn.className = "px-6 py-4 text-sm font-medium focus:outline-none tab-active";
+        }
+
+        // Init Stack
+        renderStack('all');
+
+        // --- DR Simulation Logic ---
+        const drBtn = document.getElementById('dr-trigger-btn');
+        const drLog = document.getElementById('dr-log');
+        const regionPrimary = document.getElementById('region-primary');
+        const regionFailover = document.getElementById('region-failover');
+        const appFailover = document.getElementById('app-failover');
+        const dbAsync = document.getElementById('db-async');
+        const drStatusText = document.getElementById('dr-status-text');
+
+        let isDisasterActive = false;
+
+        function logDr(msg) {
+            drLog.innerHTML += `> ${msg}<br>`;
+            drLog.scrollTop = drLog.scrollHeight;
+        }
+
+        drBtn.addEventListener('click', () => {
+            if (isDisasterActive) {
+                // Reset
+                resetDR();
+            } else {
+                startDR();
+            }
+        });
+
+        function startDR() {
+            isDisasterActive = true;
+            drBtn.innerHTML = '<span class="mr-2">🔄</span> Reset Simulation';
+            drBtn.classList.replace('bg-rose-600', 'bg-slate-600');
+            drBtn.classList.replace('hover:bg-rose-700', 'hover:bg-slate-700');
+
+            logDr("⚠️ DISASTER EVENT TRIGGERED");
+
+            // 1. Primary Region Failure
+            setTimeout(() => {
+                logDr("🚨 Primary Region connectivity lost.");
+                regionPrimary.classList.add('opacity-30', 'grayscale');
+            }, 500);
+
+            // 2. Scale Up
+            setTimeout(() => {
+                logDr("⚙️ Terraform scaling Failover Node Pool (0 -> N)...");
+                appFailover.innerHTML = "Scale: N";
+                appFailover.classList.remove('opacity-50', 'bg-slate-600', 'text-slate-300');
+                appFailover.classList.add('bg-indigo-600', 'text-white', 'opacity-100');
+                logDr("✅ Compute capacity available in Failover Region.");
+            }, 2000);
+
+            // 3. DB Promotion
+            setTimeout(() => {
+                logDr("🛢️ Executing 'db-ops/play-db-failover'...");
+                logDr("⏳ Disabling 'standby_cluster' mode...");
+                dbAsync.classList.replace('bg-slate-700', 'bg-emerald-500');
+                dbAsync.classList.add('promoted');
+                dbAsync.innerHTML = `<span class="text-2xl">👑</span><span class="text-xs font-bold mt-1">Primary</span>`;
+                drStatusText.innerText = "Promoted Leader";
+                drStatusText.classList.add('text-emerald-400', 'font-bold');
+                logDr("✅ Async Replica promoted to Primary Leader.");
+            }, 4000);
+
+            // 4. Traffic Switch
+            setTimeout(() => {
+                logDr("🌐 Updating Global DNS/CDN...");
+                regionFailover.classList.replace('border-slate-700', 'border-indigo-500');
+                regionFailover.classList.replace('border-dashed', 'border-solid');
+                regionFailover.classList.remove('bg-slate-800/50');
+                regionFailover.classList.add('bg-slate-800');
+                logDr("✅ Traffic rerouted to Failover Region.");
+                logDr("🎉 SERVICE RESTORED (RTO < 40m)");
+            }, 6000);
+        }
+
+        function resetDR() {
+            isDisasterActive = false;
+            drBtn.innerHTML = '<span class="mr-2">⚠️</span> Simulate Disaster';
+            drBtn.classList.replace('bg-slate-600', 'bg-rose-600');
+            drBtn.classList.replace('hover:bg-slate-700', 'hover:bg-rose-700');
+
+            // Reset styles
+            regionPrimary.classList.remove('opacity-30', 'grayscale');
+
+            appFailover.innerHTML = "Scale: 0";
+            appFailover.classList.add('opacity-50', 'bg-slate-600', 'text-slate-300');
+            appFailover.classList.remove('bg-indigo-600', 'text-white', 'opacity-100');
+
+            dbAsync.classList.replace('bg-emerald-500', 'bg-slate-700');
+            dbAsync.classList.remove('promoted');
+            dbAsync.innerHTML = `<span class="text-2xl">⏳</span><span class="text-xs font-bold mt-1">Async</span>`;
+
+            drStatusText.innerText = "Standby Mode";
+            drStatusText.classList.remove('text-emerald-400', 'font-bold');
+
+            regionFailover.classList.replace('border-indigo-500', 'border-slate-700');
+            regionFailover.classList.replace('border-solid', 'border-dashed');
+            regionFailover.classList.add('bg-slate-800/50');
+            regionFailover.classList.remove('bg-slate-800');
+
+            logDr("--- Reset Complete ---");
+        }
+
+    </script>
+</body>
+</html>

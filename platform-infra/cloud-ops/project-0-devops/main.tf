@@ -48,11 +48,11 @@ module "subnet_gke" {
 module "ha_nat_gateways" {
   source = "../modules/gcp/ha_nat_gateways"
 
+  project_id = var.project_id
   name        = "ha-nat-gateways"
   region      = local.region
   vpc_name    = local.vpc_name
   subnet_name = local.subnet_name_default
-
   route_network_tags = ["gke-nodes-${local.gke_cluster_name}"]
 }
 
