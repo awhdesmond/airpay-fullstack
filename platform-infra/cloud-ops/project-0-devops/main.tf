@@ -126,14 +126,16 @@ resource "google_service_account_iam_member" "workload_identity" {
 }
 
 locals {
-  target_dev_projects = [
+    target_dev_projects = [
     "project-1-dev-payments",
   ]
 
   target_prod_projects = [
     "project-1-prod-payments",
   ]
+}
 
+locals {
   atlantis_roles = [
     "roles/container.admin",                 # GKE Lifecycle
     "roles/compute.networkAdmin",            # VPC, NAT, Router, Firewalls
@@ -145,7 +147,7 @@ locals {
     "roles/storage.admin",                   # GCS buckets
   ]
 
-  project_dev_role_pairs = flatten([
+  atlantis_project_dev_role_pairs = flatten([
     for project in target_dev_projects : [
       for role in local.atlantis_roles : {
         project = project
@@ -155,7 +157,7 @@ locals {
     ]
   ])
 
-  project_prod_role_pairs = flatten([
+  atlantis_project_prod_role_pairs = flatten([
     for project in target_dev_projects : [
       for role in local.atlantis_roles : {
         project = project
@@ -167,7 +169,7 @@ locals {
 }
 
 resource "google_project_iam_member" "dev_deployer_permissions" {
-  for_each = toset(local.project_dev_role_pairs)
+  for_each = toset(local.atlantis_project_dev_role_pairs)
 
   project = each.value.project
   role    = each.value.role
@@ -175,7 +177,7 @@ resource "google_project_iam_member" "dev_deployer_permissions" {
 }
 
 resource "google_project_iam_member" "prod_deployer_permissions" {
-  for_each = toset(local.project_prod_role_pairs)
+  for_each = toset(local.atlantis_project_prod_role_pairs)
 
   project = each.value.project
   role    = each.value.role
@@ -215,4 +217,68 @@ resource "google_service_account_iam_member" "workload_identity_binding" {
   service_account_id = google_service_account.thanos_sa.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:project-0-devops.svc.id.goog[platform-monitoring/thanos-writer]"
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# 6. Ansible
+# ---------------------------------------------------------------------------------------------------------------------
+
+locals {
+  ansible_roles = [
+    "roles/compute.osAdminLogin"
+  ]
+
+  ansible_project_dev_role_pairs = flatten([
+    for project in target_dev_projects : [
+      for role in local.ansible_roles : {
+        project = project
+        role    = role
+        key     = "${project}-${role}"
+      }
+    ]
+  ])
+
+  ansible_project_prod_role_pairs = flatten([
+    for project in target_dev_projects : [
+      for role in local.ansible_roles : {
+        project = project
+        role    = role
+        key     = "${project}-${role}"
+      }
+    ]
+  ])
+}
+resource "google_service_account" "ansible_sa" {
+  account_id   = "ansible-automation-sa"
+  display_name = "Ansible Remote Access Identity"
+}
+
+resource "google_project_iam_member" "ansible_os_admin" {
+  for_each = toset(local.atlantis_project_dev_role_pairs)
+
+  project = each.value.project
+  role    = each.value.role
+  member  = "serviceAccount:${google_service_account.ansible_sa.email}"
+}
+
+resource "tls_private_key" "ansible_ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "google_os_login_ssh_public_key" "ansible_key_upload" {
+  user = google_service_account.ansible_sa.email
+  key  = tls_private_key.ansible_ssh_key.public_key_openssh
+}
+
+resource "google_secret_manager_secret" "ansible_key_secret" {
+  secret_id = "ansible-ssh-private-key"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "ansible_key_version" {
+  secret      = google_secret_manager_secret.ansible_key_secret.id
+  secret_data = tls_private_key.ansible_ssh_key.private_key_pem
 }

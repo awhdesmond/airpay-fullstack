@@ -159,9 +159,7 @@ resource "google_compute_instance" "db_nodes" {
   }
 
   service_account {
-    email  = google_service_account.postgres_sa.email
-
-    # Instance needs permissions to write logs and metrics
+    email  = google_service_account.db_cluster_sa.email
     scopes = ["cloud-platform"]
   }
 }
