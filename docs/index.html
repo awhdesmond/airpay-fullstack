@@ -340,6 +340,7 @@
                             <ul class="list-disc list-inside text-sm text-slate-600 mt-2 space-y-1">
                                 <li><strong>Sidecar:</strong> Uploads metric blocks to GCS for unlimited retention.</li>
                                 <li><strong>Querier:</strong> Aggregates real-time and historical data for a global view.</li>
+                                <li><strong>Ruler + Alertmanager:</strong> Evaluate alerting rules.</li>
                             </ul>
                         </div>
                         <div>
@@ -375,7 +376,7 @@
                         <p class="text-xs text-slate-600 mt-1">
                             <strong>Private Nodes:</strong> No public IPs.
                             <br><strong>OS:</strong> `COS_CONTAINERD` (Container-Optimized OS) - minimal attack surface, read-only root.
-                            <br><strong>Access:</strong> Control plane access via Identity-Aware Proxy (IAP).
+                            <br><strong>Access:</strong> Control plane access via Bastion Host with Identity-Aware Proxy (IAP).
                         </p>
                     </div>
 
@@ -610,10 +611,6 @@
                         <div class="bg-white p-3 rounded shadow-sm border border-red-100">
                             <div class="font-semibold text-slate-800">Synthetic Monitoring</div>
                             <p class="text-xs text-slate-500 mt-1">Canary probes for $1.00 transactions to verify full payment flow and catch "silent" failures.</p>
-                        </div>
-                        <div class="bg-white p-3 rounded shadow-sm border border-red-100">
-                            <div class="font-semibold text-slate-800">Bastion Host</div>
-                            <p class="text-xs text-slate-500 mt-1">IAP-aware proxy for secure access to private endpoints.</p>
                         </div>
                     </div>
                 </div>

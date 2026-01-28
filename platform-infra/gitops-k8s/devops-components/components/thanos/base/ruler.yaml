@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-ruler
+  namespace: monitoring
+  labels:
+    app: thanos-ruler
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: thanos-ruler
+  template:
+    metadata:
+      labels:
+        app: thanos-ruler
+    spec:
+      containers:
+      - name: thanos-ruler
+        image: quay.io/thanos/thanos:v0.32.0  # Check for latest version
+        args:
+        - rule
+        - --grpc-address=0.0.0.0:10901
+        - --http-address=0.0.0.0:10902
+        - --rule-file=/etc/thanos/rules/*.yaml
+        - --query=http://thanos-query.platform-monitoring.svc.cluster.local:9090
+        - --alertmanagers.url=http://alertmanager.platform-monitoring.svc.cluster.local:9093
+        - --label=ruler_cluster="central-observability"
+        ports:
+        - containerPort: 10901
+          name: grpc
+        - containerPort: 10902
+          name: http
+        volumeMounts:
+        - name: rules
+          mountPath: /etc/thanos/rules
+      volumes:
+      - name: rules
+        configMap:
+          name: thanos-ruler-rules
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-ruler
+  namespace: monitoring
+spec:
+  selector:
+    app: thanos-ruler
+  ports:
+  - port: 10901
+    name: grpc
+  - port: 10902
+    name: http

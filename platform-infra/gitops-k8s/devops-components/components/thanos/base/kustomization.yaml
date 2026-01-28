@@ -5,7 +5,22 @@ namespace: platform-monitoring
 
 resources:
 - sa.yaml
-- cm.yaml
 - receivers.yaml
 - store-gateway.yaml
 - querier.yaml
+- ruler.yaml
+- alertmanager.yaml
+
+secretGenerator:
+- name: thanos-objstore-config
+  files:
+    - conf/thanos.yaml
+
+configMapGenerator:
+- name: thanos-ruler-rules
+  files:
+    - conf/slo_rules.yaml
+- name: alertmanager-config
+  files:
+    - conf/alertmanager.yaml
+

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: alertmanager
+  serviceName: alertmanager-headless
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: quay.io/prometheus/alertmanager:v0.26.0
+        args:
+        - --config.file=/etc/alertmanager/alertmanager.yaml
+        - --cluster.listen-address=0.0.0.0:9094
+        # Mesh peering: tell AM instances about their peers
+        - --cluster.peer=alertmanager-0.alertmanager-headless.monitoring.svc:9094
+        - --cluster.peer=alertmanager-1.alertmanager-headless.monitoring.svc:9094
+        - --cluster.peer=alertmanager-2.alertmanager-headless.monitoring.svc:9094
+        ports:
+        - containerPort: 9093
+          name: http
+        - containerPort: 9094
+          name: cluster
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alertmanager
+      volumes:
+      - name: config
+        configMap:
+          name: alertmanager-config
+---
+# Headless service for the StatefulSet mesh
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-headless
+  namespace: monitoring
+spec:
+  clusterIP: None
+  selector:
+    app: alertmanager
+  ports:
+  - port: 9094
+    name: cluster
+---
+# Main LoadBalanced Service for Thanos Ruler to talk to
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  selector:
+    app: alertmanager
+  ports:
+  - port: 9093
+    name: http
+    targetPort: 9093

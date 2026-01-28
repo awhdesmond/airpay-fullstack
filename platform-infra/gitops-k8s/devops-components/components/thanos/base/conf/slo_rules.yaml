@@ -1,0 +1,52 @@
+groups:
+- name: slo-recording
+  rules:
+  # 1. Record the ratio of errors (5xx) vs total traffic
+  # Filter code!~"5.." ensures we don't count 5xx as successful
+  - record: job:request_error_ratio:rate5m
+    expr: |
+      sum(rate(request_duration_seconds_count{code=~"5.."}[5m]))
+      /
+      sum(rate(request_duration_seconds_count[5m]))
+
+  # We record a 1h rate for the long window check
+  - record: job:request_error_ratio:rate1h
+    expr: |
+      sum(rate(request_duration_seconds_count{code=~"5.."}[1h]))
+      /
+      sum(rate(request_duration_seconds_count[1h]))
+
+- name: slo-alerting-99.99
+  rules:
+  # CRITICAL: Burn Rate 14.4x (Exhausts budget in 2 days)
+  # 99.99% target = 0.0001 Error Budget
+  # Threshold = 14.4 * 0.0001 = 0.00144
+  - alert: ErrorBudgetBurn_Critical
+    expr: >
+      (
+        job:request_error_ratio:rate1h > 0.00144
+      and
+        job:request_error_ratio:rate5m > 0.00144
+      )
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Critical 4-Nines budget burn"
+      description: "At current rate, 99.99% error budget will be exhausted in < 2 days."
+
+  # WARNING: Burn Rate 6x (Exhausts budget in 5 days)
+  # Threshold = 6 * 0.0001 = 0.0006
+  - alert: ErrorBudgetBurn_Warning
+    expr: >
+      (
+        job:request_error_ratio:rate1h > 0.0006
+      and
+        job:request_error_ratio:rate5m > 0.0006
+      )
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Slow 4-Nines budget burn"
+      description: "At current rate, 99.99% error budget will be exhausted in < 5 days."
